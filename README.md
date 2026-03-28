@@ -1,31 +1,27 @@
-# crowPanel_wifi_conf_gui
+# CrowPanel Multi-Screen Base (SCD41 Monitor v2)
 
-ESP32を搭載したCrowPanelのLCD上にLVGLのソフトウェアキーボードを表示し、タッチ操作でWi-Fiの接続先（SSIDとパスワード）を設定するサンプル実装です。
+ESP32を搭載したCrowPanelのLCD上にLVGLのUIを展開し、Wi-Fi設定、日時表示（NTP同期）、メニュー画面といった複数画面を自由に遷移して操作できる基本実装です。ファイル分割による構造化を取り入れており、将来的にはSCD41 CO2センサー等との連携開発を行うためのベースとなります。
 
 ## 概要
 
-CrowPanelのタッチスクリーンにLVGL（Light and Versatile Graphics Library）のUIウィジェットを表示することで、デバイス単体でWi-Fi設定を完結させます。設定した認証情報はESP32のNVS（フラッシュメモリ）にPreferencesライブラリで保存され、次回起動時は自動接続を試みます。
+CrowPanelのタッチスクリーンとLVGL（Light and Versatile Graphics Library）を活用したUIです。
+デバイス単体で周辺のWi-Fiアクセスポイントをスキャン、ソフトウェアキーボードでパスワードを入力して接続し、インターネット経由で時刻同期を行うまでの基本機能を提供します。設定した認証情報はESP32のNVS（フラッシュメモリ）にPreferencesライブラリで保存され、次回起動時は自動接続を開始します。
 
-## デモ画面構成
+## 画面構成と機能
 
-```
-+----------------------------------------+
-|  WiFi WiFi Setup              [Connect] |
-+----------------------------------------+
-| SSID: [Enter WiFi SSID              ]  |
-| PASS: [Enter Password               ]  |
-| Enter SSID & Password, then press Connect.
-+========================================+
-|   Q  W  E  R  T  Y  U  I  O  P       |
-|   A  S  D  F  G  H  J  K  L          |
-|   Z  X  C  V  B  N  M    [⌫]        |
-|  [ABC]  [Space]  [Enter]  [Cancel]    |
-+========================================+
-```
+3つの画面（Screen）で構成されています。
 
-- SSIDまたはPASSフィールドをタップするとキーボードが表示されます
-- `[Enter]` または `[Connect]` ボタンで接続を開始します
-- 接続成功時はIPアドレスを、失敗時はエラーメッセージを表示します
+### 1. Wi-Fi設定画面 (`Screen_WiFi`)
+- **Wi-Fiスキャン機能**: `[Scan]`ボタンをタップすると周辺のアクセスポイントを検索し、ダイアログリストから接続したいSSIDを選択できます。
+- **ソフトウェアキーボード**: SSIDまたはPASSフィールドをタップするとLVGLのキーボードが表示され、パスワードを入力できます。
+- `[Connect]`ボタンで接続を開始し、成功時は日時表示画面へ遷移します。
+
+### 2. 日時表示画面 (`Screen_DateTime`)
+- **NTP時刻同期**: Wi-Fi接続完了後にNTPサーバーと同期し、現在の日時を1秒ごとに更新して表示します。
+- 画面上の任意の場所をタップするとメニュー画面へ遷移します。
+
+### 3. メニュー画面 (`Screen_Menu`)
+- **ナビゲーション機能**: `[WiFi Settings]` および `[Date & Time]` の各ボタンから対象の画面へ切り替えられます。
 
 ## 対応ハードウェア
 
@@ -35,7 +31,7 @@ CrowPanelのタッチスクリーンにLVGL（Light and Versatile Graphics Libra
 | CrowPanel ESP32 2.8インチ | 320×240 | `#define CROWPANEL_28` |
 | CrowPanel ESP32 3.5インチ | 480×320 | `#define CROWPANEL_35` |
 
-`.ino`ファイル冒頭の`#define`で使用する機種を切り替えてください（デフォルトは2.8インチ）。
+`Globals.h` ファイル冒頭の `#define` 部分で使用する機種のコメントアウトを外して切り替えてください（デフォルトは2.8インチ）。
 
 - タッチコントローラ: **XPT2046**（`TFT_eSPI`の`getTouch()`を使用）
 
@@ -64,23 +60,24 @@ Arduino IDEのライブラリマネージャーから以下をインストール
 
 ### 3. 書き込み
 
-1. `crowPanel_wifi_conf_gui.ino`をArduino IDEで開く
-2. `.ino`冒頭の`#define`で使用する機種（2.4 / 2.8 / 3.5インチ）を選択する
+1. `crowPanel_scd41_sensor_v2.ino`をArduino IDEで開く
+2. `Globals.h`を開き、使用する機種（2.4 / 2.8 / 3.5インチ）の定数定義を有効化する
 3. ボードに「ESP32 Dev Module」またはCrowPanel対応のボードを選択する
-4. 書き込む
+4. スケッチを書き込む
 
 ## 動作フロー
 
-```
+```text
 起動
  ├─ NVSに保存済みSSID/PASSがある
  │    └─ 自動接続を試みる（タイムアウト: 15秒）
- └─ 保存情報なし / 接続失敗
-      └─ UI表示でユーザーが入力・接続ボタン押下
-            └─ NVSに保存 → WiFi.begin()
-                  ├─ 成功: IPアドレス表示（緑）
-                  └─ 失敗: エラーメッセージ表示（赤）
+ │          ├─ 成功: NTP時刻同期後、自動で【日時表示画面】へ遷移
+ │          └─ 失敗: 自動で【メニュー画面】へ遷移
+ └─ 保存情報なし
+      └─ 自動接続をスキップし、【メニュー画面】へ移行
 ```
+
+各画面からいつでも他の画面へ遷移することができます（例: 日時表示画面をタップ→メニュー画面→WiFi設定画面）。
 
 ## ライセンス
 

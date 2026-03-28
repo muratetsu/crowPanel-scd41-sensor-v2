@@ -68,8 +68,9 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data) {
     data->state = LV_INDEV_STATE_REL;
   } else {
     data->state   = LV_INDEV_STATE_PR;
-    data->point.x = touchX;
-    data->point.y = touchY;
+    // Rotation(3)に合わせてタッチ座標を180度反転する
+    data->point.x = screenWidth - touchX;
+    data->point.y = screenHeight - touchY;
   }
 }
 
@@ -185,7 +186,7 @@ void setup() {
 
   // LCD初期化
   lcd.begin();
-  lcd.setRotation(1);
+  lcd.setRotation(3);
   lcd.fillScreen(TFT_BLACK);
   lcd.setTouch(calData);
   delay(100);

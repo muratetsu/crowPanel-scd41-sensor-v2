@@ -11,6 +11,7 @@
 #include "Screen_WiFi.h"
 #include "Screen_DateTime.h"
 #include "Screen_Menu.h"
+#include "Screen_DateSet.h"
 
 // ============================================================
 // グローバルオブジェクト定義
@@ -108,6 +109,15 @@ void showMenuScreen() {
 
   lv_obj_t *scr = lv_obj_create(NULL);
   createMenuUI(scr);
+  lv_scr_load_anim(scr, LV_SCR_LOAD_ANIM_FADE_ON, 200, 0, true);
+}
+
+void showDateSetScreen() {
+  resetDateSetUI_Fields();
+  currentScreen = SCREEN_DATESET;
+
+  lv_obj_t *scr = lv_obj_create(NULL);
+  createDateSetUI(scr);
   lv_scr_load_anim(scr, LV_SCR_LOAD_ANIM_FADE_ON, 200, 0, true);
 }
 

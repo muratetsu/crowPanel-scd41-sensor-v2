@@ -31,7 +31,8 @@ enum AppScreen {
   SCREEN_NONE,
   SCREEN_WIFI,      // 画面1: WiFi設定
   SCREEN_DATETIME,  // 画面2: 日時表示
-  SCREEN_MENU       // 画面3: メニュー
+  SCREEN_MENU,      // 画面3: メニュー
+  SCREEN_DATESET    // 画面4: 手動日時設定
 };
 
 // ============================================================
@@ -55,6 +56,7 @@ void syncNTP();
 void showWiFiScreen();
 void showDateTimeScreen();
 void showMenuScreen();
+void showDateSetScreen();
 
 // エラーラベル制御用 (Screen_WiFi に存在)
 void setWiFiErrorLabel(const char *msg);

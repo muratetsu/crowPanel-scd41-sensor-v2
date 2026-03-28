@@ -17,7 +17,7 @@ void updateDateTimeLabel() {
   if (currentScreen != SCREEN_DATETIME || label_datetime == NULL) return;
 
   struct tm timeinfo;
-  if (!getLocalTime(&timeinfo)) {
+  if (!getLocalTime(&timeinfo, 10)) {
     lv_label_set_text(label_datetime, "----/--/--\n  --:--:--");
     return;
   }

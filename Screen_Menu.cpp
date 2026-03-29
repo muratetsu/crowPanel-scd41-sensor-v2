@@ -14,7 +14,7 @@ static void menu_dateset_cb(lv_event_t *e) {
 
 static void menu_datetime_cb(lv_event_t *e) {
   if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
-    showDateTimeScreen();
+    showSensorScreen();
   }
 }
 

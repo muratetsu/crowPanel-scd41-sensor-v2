@@ -10,7 +10,7 @@
 
 #include "Globals.h"
 #include "Screen_WiFi.h"
-#include "Screen_DateTime.h"
+#include "Screen_Sensor.h"
 #include "Screen_Menu.h"
 #include "Screen_DateSet.h"
 #include "HistoryManager.h"
@@ -109,12 +109,12 @@ void showWiFiScreen() {
   lv_scr_load_anim(scr, LV_SCR_LOAD_ANIM_FADE_ON, 200, 0, true);
 }
 
-void showDateTimeScreen() {
-  resetDateTimeUI_Fields();
-  currentScreen = SCREEN_DATETIME;
+void showSensorScreen() {
+  resetSensorUI_Fields();
+  currentScreen = SCREEN_SENSOR;
 
   lv_obj_t *scr = lv_obj_create(NULL);
-  createDateTimeUI(scr);
+  createSensorUI(scr);
   lv_scr_load_anim(scr, LV_SCR_LOAD_ANIM_FADE_ON, 200, 0, true);
 }
 
@@ -156,7 +156,7 @@ void checkWiFiStatus() {
         Serial.println("[NTP] Failed to obtain time for SD history load");
     }
 
-    showDateTimeScreen(); // 成功 → 常に画面2
+    showSensorScreen(); // 成功 → 常に画面2
 
   } else if (millis() - wifiStartTime > WIFI_TIMEOUT_MS) {
     wifiConnecting = false;
@@ -336,10 +336,11 @@ void loop() {
 
   processSensorData();  // センサーデータ取得
 
-  // 1秒ごとに日時ラベルを更新
-  if (millis() - lastDateTimeUpdate >= 1000) {
-    lastDateTimeUpdate = millis();
-    updateDateTimeLabel();
+  if (currentScreen == SCREEN_SENSOR) {
+    if (millis() - lastDateTimeUpdate >= 1000) {
+      lastDateTimeUpdate = millis();
+      updateSensorLabel();
+    }
   }
 
   // 1分ごとの集計・チャートプロット処理

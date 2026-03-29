@@ -1,4 +1,4 @@
-#include "Screen_DateTime.h"
+#include "Screen_Sensor.h"
 #include "HistoryManager.h"
 #include <time.h>
 
@@ -26,7 +26,7 @@ static void chart_draw_event_cb(lv_event_t * e) {
     }
 }
 
-void resetDateTimeUI_Fields() {
+void resetSensorUI_Fields() {
   label_datetime = NULL;
   label_co2 = NULL;
   label_co2_unit = NULL;
@@ -46,8 +46,8 @@ static void datetime_touch_cb(lv_event_t *e) {
   }
 }
 
-void updateDateTimeLabel() {
-  if (currentScreen != SCREEN_DATETIME || label_datetime == NULL) return;
+void updateSensorLabel() {
+  if (currentScreen != SCREEN_SENSOR || label_datetime == NULL) return;
 
   struct tm timeinfo;
   if (!getLocalTime(&timeinfo, 10)) {
@@ -81,7 +81,7 @@ void addChartData(uint16_t co2, float temp, float humid) {
   // グローバルなメモリバッファにも保存
   addHistoryData(co2, temp, humid);
 
-  if (chart == NULL || currentScreen != SCREEN_DATETIME) return;
+  if (chart == NULL || currentScreen != SCREEN_SENSOR) return;
   
   lv_chart_set_next_value(chart, ser_co2, co2 > 0 ? co2 : LV_CHART_POINT_NONE);
   lv_chart_set_next_value(chart, ser_temp, temp > 0.0f ? (lv_coord_t)temp : LV_CHART_POINT_NONE);
@@ -89,7 +89,7 @@ void addChartData(uint16_t co2, float temp, float humid) {
   lv_chart_refresh(chart);
 }
 
-void createDateTimeUI(lv_obj_t *scr) {
+void createSensorUI(lv_obj_t *scr) {
   lv_obj_set_style_bg_color(scr, lv_color_make(10, 15, 35), 0);
   lv_obj_add_flag(scr, LV_OBJ_FLAG_CLICKABLE);
   lv_obj_add_event_cb(scr, datetime_touch_cb, LV_EVENT_CLICKED, NULL);
@@ -205,5 +205,5 @@ void createDateTimeUI(lv_obj_t *scr) {
   }
   lv_chart_refresh(chart);
 
-  Serial.println("[UI] DateTime screen created with LVGL chart and axes.");
+  Serial.println("[UI] Sensor screen created with LVGL chart and axes.");
 }

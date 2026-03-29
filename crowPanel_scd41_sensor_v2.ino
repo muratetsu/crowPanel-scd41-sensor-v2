@@ -13,6 +13,7 @@
 #include "Screen_DateTime.h"
 #include "Screen_Menu.h"
 #include "Screen_DateSet.h"
+#include "HistoryManager.h"
 
 // ============================================================
 // グローバルオブジェクト定義
@@ -146,6 +147,15 @@ void checkWiFiStatus() {
     wifiConnecting = false;
     Serial.println("[WiFi] Connected. IP: " + WiFi.localIP().toString());
     syncNTP();
+    
+    // 過去のログをSDからロード
+    struct tm timeinfo;
+    if (getLocalTime(&timeinfo, 2000)) {
+        loadHistoryFromSD(&timeinfo);
+    } else {
+        Serial.println("[NTP] Failed to obtain time for SD history load");
+    }
+
     showDateTimeScreen(); // 成功 → 常に画面2
 
   } else if (millis() - wifiStartTime > WIFI_TIMEOUT_MS) {
@@ -294,6 +304,9 @@ void setup() {
   // SCD41初期化
   scd4xInit();
 
+  // SDカード初期化
+  initSD();
+
   // NVS に保存済み認証情報があるか確認
   prefs.begin("wifi_cfg", true);
   String savedSSID = prefs.getString("ssid", "");
@@ -341,6 +354,9 @@ void loop() {
         float avgHumid = aggSumHumid / aggNumSamples;
         
         addChartData(avgCO2, avgTemp, avgHumid);
+        
+        // SDへログを書き込む
+        writeLogToSD(&timeinfo, avgCO2, avgTemp, avgHumid);
 
         Serial.printf("[Graph] Plot -> CO2: %d, Temp: %.1f, Humid: %.1f (Samples: %d)\n", 
                       avgCO2, avgTemp, avgHumid, aggNumSamples);

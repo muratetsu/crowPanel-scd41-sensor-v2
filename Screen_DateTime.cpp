@@ -1,4 +1,5 @@
 #include "Screen_DateTime.h"
+#include "HistoryManager.h"
 #include <time.h>
 
 static lv_obj_t *label_datetime = NULL;
@@ -77,10 +78,14 @@ void updateDateTimeLabel() {
 }
 
 void addChartData(uint16_t co2, float temp, float humid) {
+  // グローバルなメモリバッファにも保存
+  addHistoryData(co2, temp, humid);
+
   if (chart == NULL || currentScreen != SCREEN_DATETIME) return;
-  lv_chart_set_next_value(chart, ser_co2, co2);
-  lv_chart_set_next_value(chart, ser_temp, (lv_coord_t)temp);
-  lv_chart_set_next_value(chart, ser_humid, (lv_coord_t)humid);
+  
+  lv_chart_set_next_value(chart, ser_co2, co2 > 0 ? co2 : LV_CHART_POINT_NONE);
+  lv_chart_set_next_value(chart, ser_temp, temp > 0.0f ? (lv_coord_t)temp : LV_CHART_POINT_NONE);
+  lv_chart_set_next_value(chart, ser_humid, humid > 0.0f ? (lv_coord_t)humid : LV_CHART_POINT_NONE);
   lv_chart_refresh(chart);
 }
 
@@ -191,6 +196,14 @@ void createDateTimeUI(lv_obj_t *scr) {
   ser_co2 = lv_chart_add_series(chart, lv_color_make(150, 255, 150), LV_CHART_AXIS_PRIMARY_Y);
   ser_temp = lv_chart_add_series(chart, lv_color_make(255, 150, 150), LV_CHART_AXIS_SECONDARY_Y);
   ser_humid = lv_chart_add_series(chart, lv_color_make(150, 150, 255), LV_CHART_AXIS_SECONDARY_Y);
+
+  // メモリから過去の履歴をプロットする
+  for (int i = 0; i < HISTORY_POINTS; i++) {
+      lv_chart_set_next_value(chart, ser_co2, histCO2[i] > 0 ? histCO2[i] : LV_CHART_POINT_NONE);
+      lv_chart_set_next_value(chart, ser_temp, histTemp[i] > 0.0f ? (lv_coord_t)histTemp[i] : LV_CHART_POINT_NONE);
+      lv_chart_set_next_value(chart, ser_humid, histHumid[i] > 0.0f ? (lv_coord_t)histHumid[i] : LV_CHART_POINT_NONE);
+  }
+  lv_chart_refresh(chart);
 
   Serial.println("[UI] DateTime screen created with LVGL chart and axes.");
 }

@@ -28,6 +28,12 @@ float currentTemp = 0.0f;
 float currentHumid = 0.0f;
 bool sensorDataValid = false;
 
+// 1分間隔チャート記録用バッファ
+uint32_t aggSumCO2 = 0;
+float aggSumTemp = 0.0f;
+float aggSumHumid = 0.0f;
+uint16_t aggNumSamples = 0;
+
 #define BACKLIGHT_PIN 27
 
 #if defined(CROWPANEL_35)
@@ -222,6 +228,12 @@ void processSensorData() {
     currentHumid = humidity;
     sensorDataValid = true;
     lastRead = millis();
+    
+    // 集計用に追加
+    aggSumCO2 += co2;
+    aggSumTemp += temperature;
+    aggSumHumid += humidity;
+    aggNumSamples++;
   } else {
     sensorDataValid = false;
   }
@@ -315,6 +327,32 @@ void loop() {
   if (millis() - lastDateTimeUpdate >= 1000) {
     lastDateTimeUpdate = millis();
     updateDateTimeLabel();
+  }
+
+  // 1分ごとの集計・チャートプロット処理
+  static int prevMinute = -1;
+  struct tm timeinfo;
+  if (getLocalTime(&timeinfo, 0)) {
+    if (prevMinute != -1 && prevMinute != timeinfo.tm_min) {
+      if (aggNumSamples > 0) {
+        // 平均を求めてチャートにプロット
+        uint16_t avgCO2 = aggSumCO2 / aggNumSamples;
+        float avgTemp = aggSumTemp / aggNumSamples;
+        float avgHumid = aggSumHumid / aggNumSamples;
+        
+        addChartData(avgCO2, avgTemp, avgHumid);
+
+        Serial.printf("[Graph] Plot -> CO2: %d, Temp: %.1f, Humid: %.1f (Samples: %d)\n", 
+                      avgCO2, avgTemp, avgHumid, aggNumSamples);
+
+        // クリア
+        aggSumCO2 = 0;
+        aggSumTemp = 0.0f;
+        aggSumHumid = 0.0f;
+        aggNumSamples = 0;
+      }
+    }
+    prevMinute = timeinfo.tm_min;
   }
 
   delay(5);

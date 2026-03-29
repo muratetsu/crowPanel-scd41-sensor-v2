@@ -2,9 +2,15 @@
 #include <time.h>
 
 static lv_obj_t *label_datetime = NULL;
+static lv_obj_t *label_co2 = NULL;
+static lv_obj_t *label_temp = NULL;
+static lv_obj_t *label_humid = NULL;
 
 void resetDateTimeUI_Fields() {
   label_datetime = NULL;
+  label_co2 = NULL;
+  label_temp = NULL;
+  label_humid = NULL;
 }
 
 static void datetime_touch_cb(lv_event_t *e) {
@@ -32,6 +38,16 @@ void updateDateTimeLabel() {
     timeinfo.tm_sec
   );
   lv_label_set_text(label_datetime, buf);
+
+  if (sensorDataValid) {
+    if (label_co2) lv_label_set_text_fmt(label_co2, "CO2:   %d ppm", currentCO2);
+    if (label_temp) lv_label_set_text_fmt(label_temp, "Temp:  %s °C", String(currentTemp, 1).c_str());
+    if (label_humid) lv_label_set_text_fmt(label_humid, "Humid: %s %%", String(currentHumid, 1).c_str());
+  } else {
+    if (label_co2) lv_label_set_text(label_co2, "CO2:   -- ppm");
+    if (label_temp) lv_label_set_text(label_temp, "Temp:  -- °C");
+    if (label_humid) lv_label_set_text(label_humid, "Humid: -- %%");
+  }
 }
 
 void createDateTimeUI(lv_obj_t *scr) {
@@ -55,8 +71,25 @@ void createDateTimeUI(lv_obj_t *scr) {
   lv_obj_set_style_text_color(label_datetime, lv_color_make(200, 220, 255), 0);
   lv_obj_set_style_text_font(label_datetime, &lv_font_montserrat_20, 0);
   lv_label_set_long_mode(label_datetime, LV_LABEL_LONG_WRAP);
-  lv_obj_set_width(label_datetime, screenWidth - 20);
-  lv_obj_align(label_datetime, LV_ALIGN_CENTER, 0, -10);
+  lv_obj_align(label_datetime, LV_ALIGN_TOP_MID, 0, 45);
+
+  label_co2 = lv_label_create(scr);
+  lv_label_set_text(label_co2, "CO2:   -- ppm");
+  lv_obj_set_style_text_color(label_co2, lv_color_make(150, 255, 150), 0);
+  lv_obj_set_style_text_font(label_co2, &lv_font_montserrat_20, 0);
+  lv_obj_align(label_co2, LV_ALIGN_TOP_LEFT, 50, 100);
+  
+  label_temp = lv_label_create(scr);
+  lv_label_set_text(label_temp, "Temp:  -- °C");
+  lv_obj_set_style_text_color(label_temp, lv_color_make(255, 150, 150), 0);
+  lv_obj_set_style_text_font(label_temp, &lv_font_montserrat_20, 0);
+  lv_obj_align(label_temp, LV_ALIGN_TOP_LEFT, 50, 130);
+  
+  label_humid = lv_label_create(scr);
+  lv_label_set_text(label_humid, "Humid: -- %%");
+  lv_obj_set_style_text_color(label_humid, lv_color_make(150, 150, 255), 0);
+  lv_obj_set_style_text_font(label_humid, &lv_font_montserrat_20, 0);
+  lv_obj_align(label_humid, LV_ALIGN_TOP_LEFT, 50, 160);
 
   lv_obj_t *hint = lv_label_create(scr);
   lv_label_set_text(hint, "Tap anywhere to go to Menu");

@@ -6,6 +6,7 @@
 #include <SPI.h>
 #include <TFT_eSPI.h>
 #include <lvgl.h>
+#include <SensirionI2cScd4x.h>
 
 #include "Globals.h"
 #include "Screen_WiFi.h"
@@ -20,6 +21,12 @@ TFT_eSPI    lcd = TFT_eSPI();
 Preferences prefs;
 
 AppScreen currentScreen = SCREEN_NONE;
+
+SensirionI2cScd4x scd4x;
+uint16_t currentCO2 = 0;
+float currentTemp = 0.0f;
+float currentHumid = 0.0f;
+bool sensorDataValid = false;
 
 #define BACKLIGHT_PIN 27
 
@@ -174,6 +181,53 @@ void bootConnectWithSavedCredentials(const String &ssid, const String &pass) {
 }
 
 // ============================================================
+// SCD41 センサー初期化・データ取得
+// ============================================================
+void scd4xInit() {
+  Wire.begin();
+  scd4x.begin(Wire, SCD41_I2C_ADDR_62);
+
+  if (scd4x.wakeUp()) { Serial.println("[SCD41] wakeUp error"); }
+  if (scd4x.stopPeriodicMeasurement()) { Serial.println("[SCD41] stop error"); }
+  if (scd4x.reinit()) { Serial.println("[SCD41] reinit error"); }
+  
+  uint64_t serial0;
+  if (!scd4x.getSerialNumber(serial0)) {
+    Serial.printf("[SCD41] Serial: 0x%04x%08x\n", (uint32_t)(serial0 >> 32), (uint32_t)(serial0 & 0xFFFFFFFF));
+  }
+  
+  if (scd4x.startPeriodicMeasurement()) { Serial.println("[SCD41] start error"); }
+  Serial.println("[SCD41] Initialized.");
+}
+
+void processSensorData() {
+  static uint32_t lastRead = 0;
+  // 5秒間隔で取得
+  if (millis() - lastRead < 5000) return;
+  
+  uint16_t error;
+  uint16_t co2 = 0;
+  float temperature = 0.0f;
+  float humidity = 0.0f;
+
+  bool isDataReady = false;
+  error = scd4x.getDataReadyStatus(isDataReady);
+  // isDataReady indicates if new data is available
+  if (error || !isDataReady) return;
+
+  error = scd4x.readMeasurement(co2, temperature, humidity);
+  if (!error && co2 != 0) {
+    currentCO2 = co2;
+    currentTemp = temperature;
+    currentHumid = humidity;
+    sensorDataValid = true;
+    lastRead = millis();
+  } else {
+    sensorDataValid = false;
+  }
+}
+
+// ============================================================
 // Setup
 // ============================================================
 void setup() {
@@ -225,6 +279,9 @@ void setup() {
   indev_drv.read_cb = my_touchpad_read;
   lv_indev_drv_register(&indev_drv);
 
+  // SCD41初期化
+  scd4xInit();
+
   // NVS に保存済み認証情報があるか確認
   prefs.begin("wifi_cfg", true);
   String savedSSID = prefs.getString("ssid", "");
@@ -251,6 +308,8 @@ void loop() {
   lv_timer_handler();   // LVGLタイマー処理 (描画・イベント)
   checkWiFiStatus();    // WiFi接続状態チェック
   checkScanStatus();    // WiFiスキャン完了チェック
+
+  processSensorData();  // センサーデータ取得
 
   // 1秒ごとに日時ラベルを更新
   if (millis() - lastDateTimeUpdate >= 1000) {

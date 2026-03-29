@@ -61,4 +61,10 @@ void showDateSetScreen();
 // エラーラベル制御用 (Screen_WiFi に存在)
 void setWiFiErrorLabel(const char *msg);
 
+// SCD41 センサーデータ
+extern uint16_t currentCO2;
+extern float currentTemp;
+extern float currentHumid;
+extern bool sensorDataValid;
+
 #endif // GLOBALS_H

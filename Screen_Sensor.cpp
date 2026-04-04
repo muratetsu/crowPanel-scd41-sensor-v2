@@ -89,6 +89,115 @@ static void updateCO2YRange() {
     Serial.printf("[Chart] CO2 Y range: %d ~ %d (offset=%.0f)\n", y_min, y_max, offset);
 }
 
+// ─────────────────────────────────────────────────────────────
+// Secondary Y軸 (Temp/Humid): 正規化スケール (0-100) に固定、カスタムラベル
+// 1グリッド = 2°C (Temp) = 5% (Humid) — 旧版と同じスケール
+// ─────────────────────────────────────────────────────────────
+#define TEMP_YSTEP      2.0f  // °C per grid
+#define HUMID_YSTEP     5.0f  // % per grid
+#define SEC_GRID_SCALE 25.0f  // normalized axis units per grid (100 / 4 intervals)
+#define SEC_Y_CENTER   50.0f  // normalized center (0-100 axis)
+#define SEC_YLABEL_N    5     // 5 horizontal grid lines = 5 labels per series
+
+static float tempOffset  = 25.0f;
+static float humidOffset = 50.0f;
+static float prevTempOffset  = -9999.0f;
+static float prevHumidOffset = -9999.0f;
+
+static lv_obj_t *ylabel_temp[SEC_YLABEL_N];
+static lv_obj_t *ylabel_humid[SEC_YLABEL_N];
+
+// Temp/Humid データを 0-100 の正規化座標に変換してプロット
+static lv_coord_t normTemp(float t) {
+    float v = SEC_Y_CENTER + (t - tempOffset) / TEMP_YSTEP * SEC_GRID_SCALE;
+    if (v < 0) v = 0; if (v > 100) v = 100;
+    return (lv_coord_t)v;
+}
+static lv_coord_t normHumid(float h) {
+    float v = SEC_Y_CENTER + (h - humidOffset) / HUMID_YSTEP * SEC_GRID_SCALE;
+    if (v < 0) v = 0; if (v > 100) v = 100;
+    return (lv_coord_t)v;
+}
+
+// float配列のオフセットを CO2 と同じアルゴリズムで計算
+static float calcFloatOffset(float *arr, int n, float ystep) {
+    float vmin = 1e9f, vmax = -1e9f, latest = -1.0f;
+    for (int i = 0; i < n; i++) {
+        if (arr[i] > 0) {
+            if (arr[i] < vmin) vmin = arr[i];
+            if (arr[i] > vmax) vmax = arr[i];
+            latest = arr[i];
+        }
+    }
+    if (vmin > vmax) return -1.0f;
+    float offset = (vmin + vmax) / 2.0f;
+    float halfSpan = 2.0f * ystep; // +-2グリッド
+    if (latest > 0) {
+        if      (offset < latest - halfSpan) offset = ceilf((latest - halfSpan) / ystep) * ystep;
+        else if (offset > latest + halfSpan) offset = floorf((latest + halfSpan) / ystep) * ystep;
+        else                                 offset = roundf(offset / ystep) * ystep;
+    } else {
+        offset = roundf(offset / ystep) * ystep;
+    }
+    return offset;
+}
+
+// 全シリーズを履歴配列から再構築（正規化値が変わった時）
+static void repopulateChart() {
+    if (chart == NULL) return;
+    int n = (currentChartMode == 0) ? HISTORY_POINTS : HISTORY_DAILY_POINTS;
+    uint16_t *cArr = (currentChartMode == 0) ? histCO2   : dailyHistCO2;
+    float    *tArr = (currentChartMode == 0) ? histTemp  : dailyHistTemp;
+    float    *hArr = (currentChartMode == 0) ? histHumid : dailyHistHumid;
+    lv_chart_set_point_count(chart, n);
+    for (int i = 0; i < n; i++) {
+        lv_chart_set_next_value(chart, ser_co2,   cArr[i] > 0     ? cArr[i]          : LV_CHART_POINT_NONE);
+        lv_chart_set_next_value(chart, ser_temp,  tArr[i] > 0.0f  ? normTemp(tArr[i]) : LV_CHART_POINT_NONE);
+        lv_chart_set_next_value(chart, ser_humid, hArr[i] > 0.0f  ? normHumid(hArr[i]) : LV_CHART_POINT_NONE);
+    }
+}
+
+// Secondary Y軸のカスタムラベルを更新 (チャート右側に配置)
+static void updateSecondaryYLabels() {
+    if (chart == NULL || sensor_screen == NULL) return;
+    lv_obj_update_layout(chart);
+    lv_area_t coords;
+    lv_obj_get_content_coords(chart, &coords);
+    lv_coord_t inner_h = coords.y2 - coords.y1;
+    lv_coord_t lx_t = coords.x2 + 2;   // Temp label X
+    lv_coord_t lx_h = coords.x2 + 18;  // Humid label X
+
+    for (int k = 0; k < SEC_YLABEL_N; k++) {
+        // k=0 → 軸value=0(下端), k=4 → 軸value=100(上端)
+        lv_coord_t y = coords.y2 - (lv_coord_t)(k * 25) * inner_h / 100 - 7;
+        int n = k - 2; // -2, -1, 0, +1, +2
+        if (ylabel_temp[k]) {
+            lv_label_set_text_fmt(ylabel_temp[k], "%d", (int)roundf(tempOffset + n * TEMP_YSTEP));
+            lv_obj_set_pos(ylabel_temp[k], lx_t, y);
+        }
+        if (ylabel_humid[k]) {
+            lv_label_set_text_fmt(ylabel_humid[k], "%d", (int)roundf(humidOffset + n * HUMID_YSTEP));
+            lv_obj_set_pos(ylabel_humid[k], lx_h, y);
+        }
+    }
+}
+
+// Temp/Humidのオフセットを計算。変化した場合 true を返す
+static bool updateSecondaryRange() {
+    int n = (currentChartMode == 0) ? HISTORY_POINTS : HISTORY_DAILY_POINTS;
+    float *tArr = (currentChartMode == 0) ? histTemp  : dailyHistTemp;
+    float *hArr = (currentChartMode == 0) ? histHumid : dailyHistHumid;
+    float newT = calcFloatOffset(tArr, n, TEMP_YSTEP);
+    float newH = calcFloatOffset(hArr, n, HUMID_YSTEP);
+    if (newT < 0) newT = 25.0f;
+    if (newH < 0) newH = 50.0f;
+    bool changed = (newT != prevTempOffset) || (newH != prevHumidOffset);
+    tempOffset = newT;   prevTempOffset  = newT;
+    humidOffset = newH;  prevHumidOffset = newH;
+    Serial.printf("[Chart] Sec Y: temp_off=%.0f, humid_off=%.0f%s\n", newT, newH, changed ? " [CHANGED]" : "");
+    return changed;
+}
+
 
 // ─────────────────────────────────────────────────────────────
 // カスタム罫線・ラベルを絶対時刻位置に更新する
@@ -165,34 +274,32 @@ static void span_btnm_event_cb(lv_event_t * e) {
         currentChartMode = 0;
         Serial.println("[UI] Switched to 1H mode");
         lv_chart_set_point_count(chart, HISTORY_POINTS);
-        
+        updateSecondaryRange();  // オフセットを先に計算
         for (int i = 0; i < HISTORY_POINTS; i++) {
-            lv_chart_set_next_value(chart, ser_co2, histCO2[i] > 0 ? histCO2[i] : LV_CHART_POINT_NONE);
-            lv_chart_set_next_value(chart, ser_temp, histTemp[i] > 0.0f ? (lv_coord_t)histTemp[i] : LV_CHART_POINT_NONE);
-            lv_chart_set_next_value(chart, ser_humid, histHumid[i] > 0.0f ? (lv_coord_t)histHumid[i] : LV_CHART_POINT_NONE);
+            lv_chart_set_next_value(chart, ser_co2,   histCO2[i]   > 0     ? histCO2[i]           : LV_CHART_POINT_NONE);
+            lv_chart_set_next_value(chart, ser_temp,  histTemp[i]  > 0.0f  ? normTemp(histTemp[i])  : LV_CHART_POINT_NONE);
+            lv_chart_set_next_value(chart, ser_humid, histHumid[i] > 0.0f  ? normHumid(histHumid[i]) : LV_CHART_POINT_NONE);
         }
         lv_chart_refresh(chart);
         updateCO2YRange();
+        updateSecondaryYLabels();
         updateChartGridUI();
         
     } else if(id == 1 && currentChartMode != 1) {
         currentChartMode = 1;
         Serial.println("[UI] Switched to 1D mode");
-
         struct tm timeinfo;
-        if (getLocalTime(&timeinfo, 100)) {
-            loadDailyHistoryFromSD(&timeinfo);
-        }
-        
+        if (getLocalTime(&timeinfo, 100)) { loadDailyHistoryFromSD(&timeinfo); }
         lv_chart_set_point_count(chart, HISTORY_DAILY_POINTS);
-
+        updateSecondaryRange();  // オフセットを先に計算
         for (int i = 0; i < HISTORY_DAILY_POINTS; i++) {
-            lv_chart_set_next_value(chart, ser_co2, dailyHistCO2[i] > 0 ? dailyHistCO2[i] : LV_CHART_POINT_NONE);
-            lv_chart_set_next_value(chart, ser_temp, dailyHistTemp[i] > 0.0f ? (lv_coord_t)dailyHistTemp[i] : LV_CHART_POINT_NONE);
-            lv_chart_set_next_value(chart, ser_humid, dailyHistHumid[i] > 0.0f ? (lv_coord_t)dailyHistHumid[i] : LV_CHART_POINT_NONE);
+            lv_chart_set_next_value(chart, ser_co2,   dailyHistCO2[i]   > 0     ? dailyHistCO2[i]              : LV_CHART_POINT_NONE);
+            lv_chart_set_next_value(chart, ser_temp,  dailyHistTemp[i]  > 0.0f  ? normTemp(dailyHistTemp[i])  : LV_CHART_POINT_NONE);
+            lv_chart_set_next_value(chart, ser_humid, dailyHistHumid[i] > 0.0f  ? normHumid(dailyHistHumid[i]) : LV_CHART_POINT_NONE);
         }
         lv_chart_refresh(chart);
         updateCO2YRange();
+        updateSecondaryYLabels();
         updateChartGridUI();
     }
 }
@@ -215,6 +322,12 @@ void resetSensorUI_Fields() {
     vline_objs[k] = NULL;
     xlabel_objs[k] = NULL;
   }
+  for (int k = 0; k < SEC_YLABEL_N; k++) {
+    ylabel_temp[k]  = NULL;
+    ylabel_humid[k] = NULL;
+  }
+  prevTempOffset  = -9999.0f;
+  prevHumidOffset = -9999.0f;
 }
 
 static void datetime_touch_cb(lv_event_t *e) {
@@ -259,15 +372,23 @@ void addChartData(uint16_t co2, float temp, float humid) {
   addHistoryData(co2, temp, humid);
 
   if (chart == NULL || currentScreen != SCREEN_SENSOR) return;
-  
+
   // 1H表示の時のみ1分ごとの更新をチャートにリアルタイムに流し込む
   if (currentChartMode == 0) {
-      lv_chart_set_next_value(chart, ser_co2, co2 > 0 ? co2 : LV_CHART_POINT_NONE);
-      lv_chart_set_next_value(chart, ser_temp, temp > 0.0f ? (lv_coord_t)temp : LV_CHART_POINT_NONE);
-      lv_chart_set_next_value(chart, ser_humid, humid > 0.0f ? (lv_coord_t)humid : LV_CHART_POINT_NONE);
-      updateCO2YRange();   // CO2 Y軸オフセットを更新
+      updateCO2YRange();  // CO2 Y軸レンジ更新
+      bool secChanged = updateSecondaryRange();
+      if (secChanged) {
+          // Temp/Humid の正規化値が変わった→全データ再構築
+          repopulateChart();
+      } else {
+          // 正規化値は変わらない→最新の1点だけ追加
+          lv_chart_set_next_value(chart, ser_co2,   co2   > 0     ? co2            : LV_CHART_POINT_NONE);
+          lv_chart_set_next_value(chart, ser_temp,  temp  > 0.0f  ? normTemp(temp)  : LV_CHART_POINT_NONE);
+          lv_chart_set_next_value(chart, ser_humid, humid > 0.0f  ? normHumid(humid) : LV_CHART_POINT_NONE);
+      }
       lv_chart_refresh(chart);
-      updateChartGridUI(); // 罫線・ラベルも毎分更新
+      updateSecondaryYLabels();
+      updateChartGridUI();
   }
 }
 
@@ -377,8 +498,9 @@ void createSensorUI(lv_obj_t *scr) {
   lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_Y, 400, 2000);
   lv_chart_set_range(chart, LV_CHART_AXIS_SECONDARY_Y, 0, 100);
 
-  // 縦グリッド線は使用しない（カスタム vline_objs で代替）。横グリッド線のみ残す。
-  lv_chart_set_div_line_count(chart, 3, 0);
+  // 水平グリッド線: hdiv=5 → 5本合計(内部3本+枠2本) = Y軸5ラベル位置と一致
+  // 縦グリッド線: 0 (カスタム vline_objs で代替)
+  lv_chart_set_div_line_count(chart, 5, 0);
 
   // X軸: 目盛り線・ラベルなし（カスタム xlabel_objs で代替）
   // draw_size=15 でチャート下の空間は確保しつつ、ラベル非表示
@@ -387,12 +509,12 @@ void createSensorUI(lv_obj_t *scr) {
   // Left Y axis (CO2): 5 major ticks (400, 800, 1200, 1600, 2000), draw size: 40px
   lv_chart_set_axis_tick(chart, LV_CHART_AXIS_PRIMARY_Y, 5, 2, 5, 2, true, 40);
   
-  // Right Y axis (Temp/Humid): 6 major ticks (0, 20, 40, 60, 80, 100), draw size: 30px
-  lv_chart_set_axis_tick(chart, LV_CHART_AXIS_SECONDARY_Y, 5, 2, 6, 2, true, 30);
+  // Right Y axis (Temp/Humid): 標準ラベル無効、draw_sizeだけ確保（カスタムラベル使用）
+  lv_chart_set_axis_tick(chart, LV_CHART_AXIS_SECONDARY_Y, 5, 2, 5, 2, false, 30);
   
-  // チャート目盛り（Tick）のフォントサイズを小さくし、色をライトグレーにする
+  // チャートの標準目盛り（Tick）のフォント。現在有効なのは左Y軸(CO2)のラベルのみ
   lv_obj_set_style_text_font(chart, &lv_font_montserrat_12, LV_PART_TICKS);
-  lv_obj_set_style_text_color(chart, lv_color_make(180, 190, 210), LV_PART_TICKS);
+  lv_obj_set_style_text_color(chart, lv_color_make(150, 255, 150), LV_PART_TICKS); // CO2 color
 
   // Add series
   ser_co2 = lv_chart_add_series(chart, lv_color_make(150, 255, 150), LV_CHART_AXIS_PRIMARY_Y);
@@ -400,24 +522,25 @@ void createSensorUI(lv_obj_t *scr) {
   ser_humid = lv_chart_add_series(chart, lv_color_make(150, 150, 255), LV_CHART_AXIS_SECONDARY_Y);
 
   // メモリから過去の履歴をプロットする
+  // まずオフセットを計算してから正規化値でためる
   if (currentChartMode == 0) {
+      updateSecondaryRange();
       for (int i = 0; i < HISTORY_POINTS; i++) {
-          lv_chart_set_next_value(chart, ser_co2, histCO2[i] > 0 ? histCO2[i] : LV_CHART_POINT_NONE);
-          lv_chart_set_next_value(chart, ser_temp, histTemp[i] > 0.0f ? (lv_coord_t)histTemp[i] : LV_CHART_POINT_NONE);
-          lv_chart_set_next_value(chart, ser_humid, histHumid[i] > 0.0f ? (lv_coord_t)histHumid[i] : LV_CHART_POINT_NONE);
+          lv_chart_set_next_value(chart, ser_co2,   histCO2[i]   > 0     ? histCO2[i]            : LV_CHART_POINT_NONE);
+          lv_chart_set_next_value(chart, ser_temp,  histTemp[i]  > 0.0f  ? normTemp(histTemp[i])  : LV_CHART_POINT_NONE);
+          lv_chart_set_next_value(chart, ser_humid, histHumid[i] > 0.0f  ? normHumid(histHumid[i]) : LV_CHART_POINT_NONE);
       }
   } else {
       struct tm timeinfo;
-      if (getLocalTime(&timeinfo, 100)) {
-          loadDailyHistoryFromSD(&timeinfo);
-      }
+      if (getLocalTime(&timeinfo, 100)) { loadDailyHistoryFromSD(&timeinfo); }
+      updateSecondaryRange();
       for (int i = 0; i < HISTORY_DAILY_POINTS; i++) {
-          lv_chart_set_next_value(chart, ser_co2, dailyHistCO2[i] > 0 ? dailyHistCO2[i] : LV_CHART_POINT_NONE);
-          lv_chart_set_next_value(chart, ser_temp, dailyHistTemp[i] > 0.0f ? (lv_coord_t)dailyHistTemp[i] : LV_CHART_POINT_NONE);
-          lv_chart_set_next_value(chart, ser_humid, dailyHistHumid[i] > 0.0f ? (lv_coord_t)dailyHistHumid[i] : LV_CHART_POINT_NONE);
+          lv_chart_set_next_value(chart, ser_co2,   dailyHistCO2[i]   > 0     ? dailyHistCO2[i]              : LV_CHART_POINT_NONE);
+          lv_chart_set_next_value(chart, ser_temp,  dailyHistTemp[i]  > 0.0f  ? normTemp(dailyHistTemp[i])  : LV_CHART_POINT_NONE);
+          lv_chart_set_next_value(chart, ser_humid, dailyHistHumid[i] > 0.0f  ? normHumid(dailyHistHumid[i]) : LV_CHART_POINT_NONE);
       }
   }
-  updateCO2YRange();   // 初期表示時に履歴データに合わせたCO2 Y軸レンジを適用
+  updateCO2YRange();
   lv_chart_refresh(chart);
 
   // ─── カスタム罫線・ラベルを画面上に重ねて配置 ───
@@ -444,6 +567,24 @@ void createSensorUI(lv_obj_t *scr) {
 
   // レイアウト確定後にグリッドUIを初期配置
   updateChartGridUI();
+
+  // Secondary Y軸（右側）のカスタムラベルを作成
+  for (int k = 0; k < SEC_YLABEL_N; k++) {
+    lv_obj_t *yl_t = lv_label_create(scr);
+    lv_obj_set_style_text_font(yl_t, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_text_color(yl_t, lv_color_make(255, 150, 150), 0); // Temp color
+    lv_label_set_text(yl_t, "");
+    lv_obj_clear_flag(yl_t, LV_OBJ_FLAG_CLICKABLE);
+    ylabel_temp[k] = yl_t;
+
+    lv_obj_t *yl_h = lv_label_create(scr);
+    lv_obj_set_style_text_font(yl_h, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_text_color(yl_h, lv_color_make(150, 150, 255), 0); // Humid color
+    lv_label_set_text(yl_h, "");
+    lv_obj_clear_flag(yl_h, LV_OBJ_FLAG_CLICKABLE);
+    ylabel_humid[k] = yl_h;
+  }
+  updateSecondaryYLabels();
 
   Serial.println("[UI] Sensor screen created with LVGL chart and axes.");
 }

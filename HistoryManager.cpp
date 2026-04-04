@@ -15,6 +15,10 @@ uint16_t histCO2[HISTORY_POINTS] = {0};
 float histTemp[HISTORY_POINTS] = {0};
 float histHumid[HISTORY_POINTS] = {0};
 
+uint16_t dailyHistCO2[HISTORY_DAILY_POINTS] = {0};
+float dailyHistTemp[HISTORY_DAILY_POINTS] = {0};
+float dailyHistHumid[HISTORY_DAILY_POINTS] = {0};
+
 void initSD() {
   SD_SPI.begin(SD_SCK, SD_MISO, SD_MOSI);
   if (!SD.begin(SD_CS_PIN, SD_SPI, 40000000)) {
@@ -142,5 +146,79 @@ void loadHistoryFromSD(struct tm *now) {
      addHistoryData(0, 0, 0);
      t_cursor += 60;
   }
-  Serial.println("[SD] History loaded to memory.");
+  Serial.println("[SD] History (1H) loaded to memory.");
+}
+
+void loadDailyHistoryFromSD(struct tm *now) {
+  // バッファをゼロ（無効値）クリア
+  for (int i=0; i<HISTORY_DAILY_POINTS; i++) {
+      dailyHistCO2[i] = 0;
+      dailyHistTemp[i] = 0;
+      dailyHistHumid[i] = 0;
+  }
+  
+  uint32_t dailySumCO2[HISTORY_DAILY_POINTS] = {0};
+  float dailySumTemp[HISTORY_DAILY_POINTS] = {0};
+  float dailySumHumid[HISTORY_DAILY_POINTS] = {0};
+  int dailyCount[HISTORY_DAILY_POINTS] = {0};
+
+  time_t t_now = mktime(now);
+  time_t t_start = t_now - (24 * 3600); // 24時間前
+
+  // 昨日と今日のファイルを走査する
+  for (int d = -1; d <= 0; d++) {
+     time_t t_day = t_now + (d * 24 * 3600);
+     struct tm *tm_day = localtime(&t_day);
+     char logFileName[24];
+     strftime(logFileName, sizeof(logFileName), "/%Y%m%d.csv", tm_day);
+     
+     File file = SD.open(logFileName, FILE_READ);
+     if (file) {
+         Serial.printf("[SD] Loading daily logs from: %s\n", logFileName);
+         while(file.available()) {
+            String line = file.readStringUntil('\n');
+            if (line.length() < 20) continue;
+            
+            int year, month, day, hour, min, sec;
+            int co2; float temp, humid;
+            if (sscanf(line.c_str(), "%d-%d-%d %d:%d:%d, %d, %f, %f", 
+                           &year, &month, &day, &hour, &min, &sec, 
+                           &co2, &temp, &humid) >= 9) {
+                struct tm tm_line = {0};
+                tm_line.tm_year = year - 1900;
+                tm_line.tm_mon = month - 1;
+                tm_line.tm_mday = day;
+                tm_line.tm_hour = hour;
+                tm_line.tm_min = min;
+                tm_line.tm_sec = sec;
+                tm_line.tm_isdst = -1;
+                time_t t_log = mktime(&tm_line);
+                
+                // 直近24時間以内かチェック
+                if (t_log >= t_start && t_log <= t_now) {
+                    // バケツに入れる（0〜47番目。1バケツ＝30分）
+                    long diff = t_log - t_start;
+                    int bucket = diff / (30 * 60);
+                    if (bucket >= 0 && bucket < HISTORY_DAILY_POINTS) {
+                        dailySumCO2[bucket] += co2;
+                        dailySumTemp[bucket] += temp;
+                        dailySumHumid[bucket] += humid;
+                        dailyCount[bucket]++;
+                    }
+                }
+            }
+         }
+         file.close();
+     }
+  }
+  
+  // バケツごとに平均値を計算
+  for(int i = 0; i < HISTORY_DAILY_POINTS; i++) {
+     if (dailyCount[i] > 0) {
+        dailyHistCO2[i] = dailySumCO2[i] / dailyCount[i];
+        dailyHistTemp[i] = dailySumTemp[i] / dailyCount[i];
+        dailyHistHumid[i] = dailySumHumid[i] / dailyCount[i];
+     }
+  }
+  Serial.println("[SD] History (1D) loaded to memory.");
 }

@@ -15,11 +15,83 @@ static lv_chart_series_t *ser_co2 = NULL;
 static lv_chart_series_t *ser_temp = NULL;
 static lv_chart_series_t *ser_humid = NULL;
 
-static void chart_draw_event_cb(lv_event_t * e);
-
 static int currentChartMode = 0; // 0 = 1H (過去60分), 1 = 1D (過去24時間)
 static lv_obj_t *span_btnm = NULL;
 
+// カスタム罫線・ラベル用オブジェクト（絶対時刻位置に動的配置）
+#define GRID_MARKS 6
+static lv_obj_t *vline_objs[GRID_MARKS];
+static lv_obj_t *xlabel_objs[GRID_MARKS];
+static lv_obj_t *sensor_screen = NULL;
+
+// ─────────────────────────────────────────────────────────────
+// カスタム罫線・ラベルを絶対時刻位置に更新する
+// ─────────────────────────────────────────────────────────────
+static void updateChartGridUI() {
+    if (chart == NULL || sensor_screen == NULL) return;
+
+    struct tm timeinfo;
+    if (!getLocalTime(&timeinfo, 100)) return;
+
+    // レイアウト確定後に座標取得
+    lv_obj_update_layout(chart);
+    lv_area_t coords;
+    lv_obj_get_content_coords(chart, &coords);
+    lv_coord_t inner_w = coords.x2 - coords.x1;
+    lv_coord_t inner_h = coords.y2 - coords.y1;
+    lv_coord_t label_y = coords.y2 + 2; // チャート直下
+
+    if (currentChartMode == 0) {
+        // ─── 1H: 絶対10分マーク (0,10,20,30,40,50分) ───
+        // data[59]=現在分, data[0]=59分前
+        // idx_start: 左端に最も近い絶対10分マークのdata index
+        int cur_min = timeinfo.tm_min;
+        int idx_start = (10 - (cur_min + 1) % 10) % 10;
+
+        for (int k = 0; k < GRID_MARKS; k++) {
+            int data_idx = idx_start + k * 10;
+            lv_coord_t x = coords.x1 + (lv_coord_t)data_idx * inner_w / (HISTORY_POINTS - 1);
+
+            // 罫線の位置とサイズを更新
+            if (vline_objs[k]) {
+                lv_obj_set_pos(vline_objs[k], x, coords.y1);
+                lv_obj_set_size(vline_objs[k], 1, inner_h);
+            }
+
+            // ラベルの位置とテキストを更新
+            if (xlabel_objs[k]) {
+                int label_min = (cur_min - 59 + data_idx + 60) % 60;
+                lv_label_set_text_fmt(xlabel_objs[k], "%d", label_min);
+                lv_obj_set_pos(xlabel_objs[k], x - 8, label_y);
+            }
+        }
+    } else {
+        // ─── 1D: 絶対4時間マーク (0,4,8,12,16,20時) ───
+        // data[47]=最新30minバケツ, data[0]=47バケツ前(≈23.5h前)
+        // 4h = 8バケツ。idx_startは左端に近い4h境界のdata index
+        int cur_hh = timeinfo.tm_hour * 2 + (timeinfo.tm_min >= 30 ? 1 : 0);
+        int idx_start = (8 - (cur_hh + 1) % 8) % 8;
+
+        for (int k = 0; k < GRID_MARKS; k++) {
+            int data_idx = idx_start + k * 8;
+            lv_coord_t x = coords.x1 + (lv_coord_t)data_idx * inner_w / (HISTORY_DAILY_POINTS - 1);
+
+            if (vline_objs[k]) {
+                lv_obj_set_pos(vline_objs[k], x, coords.y1);
+                lv_obj_set_size(vline_objs[k], 1, inner_h);
+            }
+
+            if (xlabel_objs[k]) {
+                // 絶対時: data_idxは cur_hh から (47-data_idx) バケツ前 = (47-data_idx)/2h前
+                int label_hour = ((cur_hh - 47 + data_idx + 96) / 2) % 24;
+                lv_label_set_text_fmt(xlabel_objs[k], "%d", label_hour);
+                lv_obj_set_pos(xlabel_objs[k], x - 8, label_y);
+            }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────
 static void span_btnm_event_cb(lv_event_t * e) {
     lv_obj_t * obj = lv_event_get_target(e);
     uint32_t id = lv_btnmatrix_get_selected_btn(obj);
@@ -34,6 +106,7 @@ static void span_btnm_event_cb(lv_event_t * e) {
             lv_chart_set_next_value(chart, ser_humid, histHumid[i] > 0.0f ? (lv_coord_t)histHumid[i] : LV_CHART_POINT_NONE);
         }
         lv_chart_refresh(chart);
+        updateChartGridUI();
         
     } else if(id == 1 && currentChartMode != 1) {
         currentChartMode = 1;
@@ -52,21 +125,7 @@ static void span_btnm_event_cb(lv_event_t * e) {
             lv_chart_set_next_value(chart, ser_humid, dailyHistHumid[i] > 0.0f ? (lv_coord_t)dailyHistHumid[i] : LV_CHART_POINT_NONE);
         }
         lv_chart_refresh(chart);
-    }
-}
-
-static void chart_draw_event_cb(lv_event_t * e) {
-    lv_obj_draw_part_dsc_t * dsc = lv_event_get_draw_part_dsc(e);
-    if (!lv_obj_draw_part_check_type(dsc, &lv_chart_class, LV_CHART_DRAW_PART_TICK_LABEL)) return;
-    
-    if (dsc->id == LV_CHART_AXIS_PRIMARY_X && dsc->text) {
-        if (currentChartMode == 0) {
-            // 1H: dsc->value (0〜6) を 0, 10, 20...60 にする
-            lv_snprintf(dsc->text, dsc->text_length, "%d", dsc->value * 10);
-        } else {
-            // 1D: dsc->value (0〜6) を 0, 4, 8, 12, 16, 20, 24 にする
-            lv_snprintf(dsc->text, dsc->text_length, "%d", dsc->value * 4);
-        }
+        updateChartGridUI();
     }
 }
 
@@ -83,6 +142,11 @@ void resetSensorUI_Fields() {
   ser_co2 = NULL;
   ser_temp = NULL;
   ser_humid = NULL;
+  sensor_screen = NULL;
+  for (int k = 0; k < GRID_MARKS; k++) {
+    vline_objs[k] = NULL;
+    xlabel_objs[k] = NULL;
+  }
 }
 
 static void datetime_touch_cb(lv_event_t *e) {
@@ -134,10 +198,13 @@ void addChartData(uint16_t co2, float temp, float humid) {
       lv_chart_set_next_value(chart, ser_temp, temp > 0.0f ? (lv_coord_t)temp : LV_CHART_POINT_NONE);
       lv_chart_set_next_value(chart, ser_humid, humid > 0.0f ? (lv_coord_t)humid : LV_CHART_POINT_NONE);
       lv_chart_refresh(chart);
+      updateChartGridUI(); // 罫線・ラベルも毎分更新
   }
 }
 
 void createSensorUI(lv_obj_t *scr) {
+  sensor_screen = scr;
+
   lv_obj_set_style_bg_color(scr, lv_color_make(10, 15, 35), 0);
   lv_obj_add_flag(scr, LV_OBJ_FLAG_CLICKABLE);
   lv_obj_add_event_cb(scr, datetime_touch_cb, LV_EVENT_CLICKED, NULL);
@@ -226,7 +293,7 @@ void createSensorUI(lv_obj_t *scr) {
   lv_obj_set_style_bg_color(chart, lv_color_make(20, 25, 45), LV_PART_MAIN);
   lv_obj_set_style_border_color(chart, lv_color_make(60, 70, 90), LV_PART_MAIN);
   lv_obj_set_style_border_width(chart, 1, LV_PART_MAIN);
-  lv_obj_set_style_line_color(chart, lv_color_make(60, 70, 90), LV_PART_MAIN); // グリッド線の色
+  lv_obj_set_style_line_color(chart, lv_color_make(60, 70, 90), LV_PART_MAIN);
 
   // 左右をギリギリまで使うため、チャート内のパディング（余白）を 0 に設定します
   lv_obj_set_style_pad_left(chart, 0, LV_PART_MAIN);
@@ -241,9 +308,12 @@ void createSensorUI(lv_obj_t *scr) {
   lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_Y, 400, 2000);
   lv_chart_set_range(chart, LV_CHART_AXIS_SECONDARY_Y, 0, 100);
 
-  // Axis Ticks
-  // X axis: 7 major ticks (0, 10, 20...60), draw size: 15px for text area
-  lv_chart_set_axis_tick(chart, LV_CHART_AXIS_PRIMARY_X, 5, 2, 7, 2, true, 15);
+  // 縦グリッド線は使用しない（カスタム vline_objs で代替）。横グリッド線のみ残す。
+  lv_chart_set_div_line_count(chart, 3, 0);
+
+  // X軸: 目盛り線・ラベルなし（カスタム xlabel_objs で代替）
+  // draw_size=15 でチャート下の空間は確保しつつ、ラベル非表示
+  lv_chart_set_axis_tick(chart, LV_CHART_AXIS_PRIMARY_X, 0, 0, 0, 0, false, 15);
   
   // Left Y axis (CO2): 5 major ticks (400, 800, 1200, 1600, 2000), draw size: 40px
   lv_chart_set_axis_tick(chart, LV_CHART_AXIS_PRIMARY_Y, 5, 2, 5, 2, true, 40);
@@ -254,9 +324,6 @@ void createSensorUI(lv_obj_t *scr) {
   // チャート目盛り（Tick）のフォントサイズを小さくし、色をライトグレーにする
   lv_obj_set_style_text_font(chart, &lv_font_montserrat_12, LV_PART_TICKS);
   lv_obj_set_style_text_color(chart, lv_color_make(180, 190, 210), LV_PART_TICKS);
-
-  // X軸の数値をカスタム表示（0,10..60）にするためのイベントコールバック
-  lv_obj_add_event_cb(chart, chart_draw_event_cb, LV_EVENT_DRAW_PART_BEGIN, NULL);
 
   // Add series
   ser_co2 = lv_chart_add_series(chart, lv_color_make(150, 255, 150), LV_CHART_AXIS_PRIMARY_Y);
@@ -282,6 +349,31 @@ void createSensorUI(lv_obj_t *scr) {
       }
   }
   lv_chart_refresh(chart);
+
+  // ─── カスタム罫線・ラベルを画面上に重ねて配置 ───
+  // チャートの後に生成することでZ順でチャートの上に描画される
+  for (int k = 0; k < GRID_MARKS; k++) {
+    // 縦線 (1px幅の矩形)
+    lv_obj_t *vl = lv_obj_create(scr);
+    lv_obj_remove_style_all(vl);
+    lv_obj_set_style_bg_opa(vl, LV_OPA_COVER, 0);
+    lv_obj_set_style_bg_color(vl, lv_color_make(60, 70, 90), 0);
+    lv_obj_set_style_radius(vl, 0, 0);
+    lv_obj_clear_flag(vl, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_size(vl, 1, 1); // 初期サイズ（updateChartGridUIで更新）
+    vline_objs[k] = vl;
+
+    // X軸ラベル
+    lv_obj_t *xl = lv_label_create(scr);
+    lv_obj_set_style_text_font(xl, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_text_color(xl, lv_color_make(180, 190, 210), 0);
+    lv_label_set_text(xl, "");
+    lv_obj_clear_flag(xl, LV_OBJ_FLAG_CLICKABLE);
+    xlabel_objs[k] = xl;
+  }
+
+  // レイアウト確定後にグリッドUIを初期配置
+  updateChartGridUI();
 
   Serial.println("[UI] Sensor screen created with LVGL chart and axes.");
 }

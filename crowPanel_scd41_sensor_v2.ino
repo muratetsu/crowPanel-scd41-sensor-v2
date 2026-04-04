@@ -150,7 +150,7 @@ void checkWiFiStatus() {
     
     // 過去のログをSDからロード
     struct tm timeinfo;
-    if (getLocalTime(&timeinfo, 2000)) {
+    if (getLocalTime(&timeinfo, 10000)) {
         loadHistoryFromSD(&timeinfo);
     } else {
         Serial.println("[NTP] Failed to obtain time for SD history load");

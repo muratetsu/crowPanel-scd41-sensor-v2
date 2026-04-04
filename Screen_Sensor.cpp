@@ -24,6 +24,72 @@ static lv_obj_t *vline_objs[GRID_MARKS];
 static lv_obj_t *xlabel_objs[GRID_MARKS];
 static lv_obj_t *sensor_screen = NULL;
 
+// CO2 Y軸: スケール幅固定(1600)、中央をデータに合わせてスライド
+#define CO2_YSTEP   200   // グリッド間隔 (旧版と同じ)
+#define CO2_YSPAN  1600   // 表示幅 (400〜2000 = 1600)
+
+// ─────────────────────────────────────────────────────────────
+// CO2データのmin/maxからY軸 range を計算して適用する
+// 旧バージョン graph.cpp の getOffset()/drawline() ロジックを移植
+// ─────────────────────────────────────────────────────────────
+static void updateCO2YRange() {
+    if (chart == NULL) return;
+
+    // --- 1. データのmin/max → 中央値 (getOffset相当) ---
+    float vmin = 1e9f, vmax = -1e9f;
+    int n_points = (currentChartMode == 0) ? HISTORY_POINTS : HISTORY_DAILY_POINTS;
+    uint16_t *data = (currentChartMode == 0) ? histCO2 : dailyHistCO2;
+
+    for (int i = 0; i < n_points; i++) {
+        if (data[i] > 0) {
+            if (data[i] < vmin) vmin = data[i];
+            if (data[i] > vmax) vmax = data[i];
+        }
+    }
+
+    if (vmin > vmax) {
+        // 有効データなし: デフォルトのまま
+        lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_Y, 400, 2000);
+        return;
+    }
+
+    float offset = (vmin + vmax) / 2.0f; // 中央値
+
+    // --- 2. 最新値が必ず見えるよう offset を補正 (drawline相当) ---
+    // 最新データ = 配列の最後の有効値
+    float latestVal = -1.0f;
+    for (int i = n_points - 1; i >= 0; i--) {
+        if (data[i] > 0) { latestVal = data[i]; break; }
+    }
+
+    if (latestVal > 0) {
+        float halfSpan = CO2_YSPAN / 2.0f;
+        float offsetLow  = latestVal - halfSpan;
+        float offsetHigh = latestVal + halfSpan;
+
+        if (offset < offsetLow) {
+            // 最新値が上にはみ出る → offset を上に寄せる
+            offset = ceilf(offsetLow / CO2_YSTEP) * CO2_YSTEP;
+        } else if (offset > offsetHigh) {
+            // 最新値が下にはみ出る → offset を下に寄せる
+            offset = floorf(offsetHigh / CO2_YSTEP) * CO2_YSTEP;
+        } else {
+            // 最新値が収まっている → offset を CO2_YSTEP の倍数にスナップ
+            offset = roundf(offset / CO2_YSTEP) * CO2_YSTEP;
+        }
+    } else {
+        offset = roundf(offset / CO2_YSTEP) * CO2_YSTEP;
+    }
+
+    // --- 3. offset を中心に CO2_YSPAN の range を設定 ---
+    lv_coord_t y_min = (lv_coord_t)(offset - CO2_YSPAN / 2);
+    lv_coord_t y_max = (lv_coord_t)(offset + CO2_YSPAN / 2);
+    lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_Y, y_min, y_max);
+
+    Serial.printf("[Chart] CO2 Y range: %d ~ %d (offset=%.0f)\n", y_min, y_max, offset);
+}
+
+
 // ─────────────────────────────────────────────────────────────
 // カスタム罫線・ラベルを絶対時刻位置に更新する
 // ─────────────────────────────────────────────────────────────
@@ -106,6 +172,7 @@ static void span_btnm_event_cb(lv_event_t * e) {
             lv_chart_set_next_value(chart, ser_humid, histHumid[i] > 0.0f ? (lv_coord_t)histHumid[i] : LV_CHART_POINT_NONE);
         }
         lv_chart_refresh(chart);
+        updateCO2YRange();
         updateChartGridUI();
         
     } else if(id == 1 && currentChartMode != 1) {
@@ -125,6 +192,7 @@ static void span_btnm_event_cb(lv_event_t * e) {
             lv_chart_set_next_value(chart, ser_humid, dailyHistHumid[i] > 0.0f ? (lv_coord_t)dailyHistHumid[i] : LV_CHART_POINT_NONE);
         }
         lv_chart_refresh(chart);
+        updateCO2YRange();
         updateChartGridUI();
     }
 }
@@ -197,6 +265,7 @@ void addChartData(uint16_t co2, float temp, float humid) {
       lv_chart_set_next_value(chart, ser_co2, co2 > 0 ? co2 : LV_CHART_POINT_NONE);
       lv_chart_set_next_value(chart, ser_temp, temp > 0.0f ? (lv_coord_t)temp : LV_CHART_POINT_NONE);
       lv_chart_set_next_value(chart, ser_humid, humid > 0.0f ? (lv_coord_t)humid : LV_CHART_POINT_NONE);
+      updateCO2YRange();   // CO2 Y軸オフセットを更新
       lv_chart_refresh(chart);
       updateChartGridUI(); // 罫線・ラベルも毎分更新
   }
@@ -348,6 +417,7 @@ void createSensorUI(lv_obj_t *scr) {
           lv_chart_set_next_value(chart, ser_humid, dailyHistHumid[i] > 0.0f ? (lv_coord_t)dailyHistHumid[i] : LV_CHART_POINT_NONE);
       }
   }
+  updateCO2YRange();   // 初期表示時に履歴データに合わせたCO2 Y軸レンジを適用
   lv_chart_refresh(chart);
 
   // ─── カスタム罫線・ラベルを画面上に重ねて配置 ───

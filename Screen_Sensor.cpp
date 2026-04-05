@@ -81,6 +81,11 @@ static void updateCO2YRange() {
         offset = roundf(offset / CO2_YSTEP) * CO2_YSTEP;
     }
 
+    // 下限がマイナス（0未満）にならないように、offsetを最小でも CO2_YSPAN / 2 に制限する
+    if (offset < CO2_YSPAN / 2.0f) {
+        offset = CO2_YSPAN / 2.0f;
+    }
+
     // --- 3. offset を中心に CO2_YSPAN の range を設定 ---
     lv_coord_t y_min = (lv_coord_t)(offset - CO2_YSPAN / 2);
     lv_coord_t y_max = (lv_coord_t)(offset + CO2_YSPAN / 2);
@@ -191,6 +196,12 @@ static bool updateSecondaryRange() {
     float newH = calcFloatOffset(hArr, n, HUMID_YSTEP);
     if (newT < 0) newT = 25.0f;
     if (newH < 0) newH = 50.0f;
+
+    // 湿度の表示幅（中心からの半分の幅）は 4.0f * HUMID_YSTEP = 20.0f
+    float humidHalfSpan = 4.0f * HUMID_YSTEP;
+    if (newH < humidHalfSpan) newH = humidHalfSpan; // 0% を下回らないように
+    if (newH > 100.0f - humidHalfSpan) newH = 100.0f - humidHalfSpan; // 100% を超えないように
+
     bool changed = (newT != prevTempOffset) || (newH != prevHumidOffset);
     tempOffset = newT;   prevTempOffset  = newT;
     humidOffset = newH;  prevHumidOffset = newH;

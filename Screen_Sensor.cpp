@@ -413,7 +413,7 @@ void createSensorUI(lv_obj_t *scr) {
   label_datetime = lv_label_create(scr);
   lv_label_set_text(label_datetime, "----/--/-- --:--:--");
   lv_obj_set_style_text_color(label_datetime, lv_color_make(200, 220, 255), 0);
-  lv_obj_set_style_text_font(label_datetime, &lv_font_montserrat_16, 0); 
+  lv_obj_set_style_text_font(label_datetime, &lv_font_montserrat_20, 0); 
   lv_obj_align(label_datetime, LV_ALIGN_TOP_LEFT, 5, 5);
 
   // --- 期間切り替え用ボタングループ (4H / 1D) ---

@@ -146,7 +146,7 @@ void loadHistoryFromSD(struct tm *now) {
      addHistoryData(0, 0, 0);
      t_cursor += 60;
   }
-  Serial.println("[SD] History (1H) loaded to memory.");
+  Serial.println("[SD] History (4H) loaded to memory.");
 }
 
 void loadDailyHistoryFromSD(struct tm *now) {
@@ -196,9 +196,9 @@ void loadDailyHistoryFromSD(struct tm *now) {
                 
                 // 直近24時間以内かチェック
                 if (t_log >= t_start && t_log <= t_now) {
-                    // バケツに入れる（0〜47番目。1バケツ＝30分）
+                    // バケツに入れる（0〜239番目。1バケツ＝6分）
                     long diff = t_log - t_start;
-                    int bucket = diff / (30 * 60);
+                    int bucket = diff / (6 * 60);
                     if (bucket >= 0 && bucket < HISTORY_DAILY_POINTS) {
                         dailySumCO2[bucket] += co2;
                         dailySumTemp[bucket] += temp;

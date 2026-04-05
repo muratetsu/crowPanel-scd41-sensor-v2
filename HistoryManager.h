@@ -4,8 +4,8 @@
 #include <Arduino.h>
 #include <time.h>
 
-#define HISTORY_POINTS 60
-#define HISTORY_DAILY_POINTS 48 // 30分ごとに1プロット (24時間 = 48点)
+#define HISTORY_POINTS 240 // 1分ごとに1プロット (4時間 = 240点)
+#define HISTORY_DAILY_POINTS 240 // 6分ごとに1プロット (24時間 = 240点)
 
 // チャート用のメモリ内バッファ (1H用)
 extern uint16_t histCO2[HISTORY_POINTS];

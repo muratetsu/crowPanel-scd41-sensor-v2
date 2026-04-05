@@ -19,7 +19,7 @@ static int currentChartMode = 0; // 0 = 1H (過去60分), 1 = 1D (過去24時間
 static lv_obj_t *span_btnm = NULL;
 
 // カスタム罫線・ラベル用オブジェクト（絶対時刻位置に動的配置）
-#define GRID_MARKS 6
+#define GRID_MARKS 9
 static lv_obj_t *vline_objs[GRID_MARKS];
 static lv_obj_t *xlabel_objs[GRID_MARKS];
 static lv_obj_t *sensor_screen = NULL;
@@ -164,8 +164,8 @@ static void updateSecondaryYLabels() {
     lv_area_t coords;
     lv_obj_get_content_coords(chart, &coords);
     lv_coord_t inner_h = coords.y2 - coords.y1;
-    lv_coord_t lx_t = coords.x2 + 4;   // Temp label X
-    lv_coord_t lx_h = coords.x2 + 20;  // Humid label X
+    lv_coord_t lx_t = coords.x2 + 8;   // Temp label X
+    lv_coord_t lx_h = coords.x2 + 24;  // Humid label X
 
     for (int k = 0; k < SEC_YLABEL_N; k++) {
         // k=0 → 軸value=0(下端), k=8 → 軸value=100(上端)
@@ -217,50 +217,61 @@ static void updateChartGridUI() {
     lv_coord_t label_y = coords.y2 + 2; // チャート直下
 
     if (currentChartMode == 0) {
-        // ─── 1H: 絶対10分マーク (0,10,20,30,40,50分) ───
-        // data[59]=現在分, data[0]=59分前
-        // idx_start: 左端に最も近い絶対10分マークのdata index
-        int cur_min = timeinfo.tm_min;
-        int idx_start = (10 - (cur_min + 1) % 10) % 10;
+        // ─── 4H: 絶対1時間マーク ───
+        int cur_min = timeinfo.tm_hour * 60 + timeinfo.tm_min;
+        int T = (cur_min - (HISTORY_POINTS - 1) % 60 + 60) % 60;
+        int idx_start = (60 - T % 60) % 60;
 
         for (int k = 0; k < GRID_MARKS; k++) {
-            int data_idx = idx_start + k * 10;
-            lv_coord_t x = coords.x1 + (lv_coord_t)data_idx * inner_w / (HISTORY_POINTS - 1);
-
-            // 罫線の位置とサイズを更新
+            int data_idx = idx_start + k * 60;
             if (vline_objs[k]) {
-                lv_obj_set_pos(vline_objs[k], x, coords.y1);
-                lv_obj_set_size(vline_objs[k], 1, inner_h);
+                if (data_idx < HISTORY_POINTS) {
+                    lv_coord_t x = coords.x1 + (lv_coord_t)data_idx * inner_w / (HISTORY_POINTS - 1);
+                    lv_obj_set_pos(vline_objs[k], x, coords.y1);
+                    lv_obj_set_size(vline_objs[k], 1, inner_h);
+                } else {
+                    lv_obj_set_size(vline_objs[k], 0, 0);
+                }
             }
-
-            // ラベルの位置とテキストを更新
             if (xlabel_objs[k]) {
-                int label_min = (cur_min - 59 + data_idx + 60) % 60;
-                lv_label_set_text_fmt(xlabel_objs[k], "%d", label_min);
-                lv_obj_set_pos(xlabel_objs[k], x - 8, label_y);
+                if (data_idx < HISTORY_POINTS) {
+                    lv_coord_t x = coords.x1 + (lv_coord_t)data_idx * inner_w / (HISTORY_POINTS - 1);
+                    int abs_min = cur_min - (HISTORY_POINTS - 1) + data_idx;
+                    int label_hour = (((abs_min % 1440) + 1440) % 1440) / 60;
+                    lv_label_set_text_fmt(xlabel_objs[k], "%d:00", label_hour);
+                    lv_obj_set_pos(xlabel_objs[k], x - 12, label_y);
+                } else {
+                    lv_label_set_text(xlabel_objs[k], "");
+                }
             }
         }
     } else {
-        // ─── 1D: 絶対4時間マーク (0,4,8,12,16,20時) ───
-        // data[47]=最新30minバケツ, data[0]=47バケツ前(≈23.5h前)
-        // 4h = 8バケツ。idx_startは左端に近い4h境界のdata index
-        int cur_hh = timeinfo.tm_hour * 2 + (timeinfo.tm_min >= 30 ? 1 : 0);
-        int idx_start = (8 - (cur_hh + 1) % 8) % 8;
+        // ─── 1D: 絶対4時間マーク ───
+        int cur_bkt = (timeinfo.tm_hour * 60 + timeinfo.tm_min) / 6;
+        int T = (cur_bkt - (HISTORY_DAILY_POINTS - 1) % 40 + 40) % 40;
+        int idx_start = (40 - T % 40) % 40;
 
         for (int k = 0; k < GRID_MARKS; k++) {
-            int data_idx = idx_start + k * 8;
-            lv_coord_t x = coords.x1 + (lv_coord_t)data_idx * inner_w / (HISTORY_DAILY_POINTS - 1);
-
+            int data_idx = idx_start + k * 40;
             if (vline_objs[k]) {
-                lv_obj_set_pos(vline_objs[k], x, coords.y1);
-                lv_obj_set_size(vline_objs[k], 1, inner_h);
+                if (data_idx < HISTORY_DAILY_POINTS) {
+                    lv_coord_t x = coords.x1 + (lv_coord_t)data_idx * inner_w / (HISTORY_DAILY_POINTS - 1);
+                    lv_obj_set_pos(vline_objs[k], x, coords.y1);
+                    lv_obj_set_size(vline_objs[k], 1, inner_h);
+                } else {
+                    lv_obj_set_size(vline_objs[k], 0, 0);
+                }
             }
-
             if (xlabel_objs[k]) {
-                // 絶対時: data_idxは cur_hh から (47-data_idx) バケツ前 = (47-data_idx)/2h前
-                int label_hour = ((cur_hh - 47 + data_idx + 96) / 2) % 24;
-                lv_label_set_text_fmt(xlabel_objs[k], "%d", label_hour);
-                lv_obj_set_pos(xlabel_objs[k], x - 8, label_y);
+                if (data_idx < HISTORY_DAILY_POINTS) {
+                    lv_coord_t x = coords.x1 + (lv_coord_t)data_idx * inner_w / (HISTORY_DAILY_POINTS - 1);
+                    int abs_bkt = cur_bkt - (HISTORY_DAILY_POINTS - 1) + data_idx;
+                    int label_hour = (((abs_bkt * 6 % 1440) + 1440) % 1440) / 60;
+                    lv_label_set_text_fmt(xlabel_objs[k], "%d:00", label_hour);
+                    lv_obj_set_pos(xlabel_objs[k], x - 12, label_y);
+                } else {
+                    lv_label_set_text(xlabel_objs[k], "");
+                }
             }
         }
     }
@@ -272,7 +283,7 @@ static void span_btnm_event_cb(lv_event_t * e) {
     uint32_t id = lv_btnmatrix_get_selected_btn(obj);
     if(id == 0 && currentChartMode != 0) {
         currentChartMode = 0;
-        Serial.println("[UI] Switched to 1H mode");
+        Serial.println("[UI] Switched to 4H mode");
         lv_chart_set_point_count(chart, HISTORY_POINTS);
         updateSecondaryRange();  // オフセットを先に計算
         for (int i = 0; i < HISTORY_POINTS; i++) {
@@ -373,7 +384,7 @@ void addChartData(uint16_t co2, float temp, float humid) {
 
   if (chart == NULL || currentScreen != SCREEN_SENSOR) return;
 
-  // 1H表示の時のみ1分ごとの更新をチャートにリアルタイムに流し込む
+  // 4H表示の時のみ1分ごとの更新をチャートにリアルタイムに流し込む
   if (currentChartMode == 0) {
       updateCO2YRange();  // CO2 Y軸レンジ更新
       bool secChanged = updateSecondaryRange();
@@ -405,9 +416,9 @@ void createSensorUI(lv_obj_t *scr) {
   lv_obj_set_style_text_font(label_datetime, &lv_font_montserrat_16, 0); 
   lv_obj_align(label_datetime, LV_ALIGN_TOP_LEFT, 5, 5);
 
-  // --- 期間切り替え用ボタングループ (1H / 1D) ---
+  // --- 期間切り替え用ボタングループ (4H / 1D) ---
   span_btnm = lv_btnmatrix_create(scr);
-  static const char * span_map[] = {"1H", "1D", ""};
+  static const char * span_map[] = {"4H", "1D", ""};
   lv_btnmatrix_set_map(span_btnm, span_map);
   lv_obj_set_size(span_btnm, 80, 25);
   lv_obj_align(span_btnm, LV_ALIGN_TOP_RIGHT, -5, 5); // 右上に配置
@@ -517,11 +528,9 @@ void createSensorUI(lv_obj_t *scr) {
   lv_obj_set_style_text_font(chart, &lv_font_montserrat_12, LV_PART_TICKS);
   lv_obj_set_style_text_color(chart, lv_color_make(150, 255, 150), LV_PART_TICKS); // CO2 color
 
-  // チャートのデータポイント（マーカー）のサイズを3pxに設定
-  lv_obj_set_style_size(chart, 3, LV_PART_INDICATOR);
-  
-  // 線を非表示にしてマーカーのみを描画する（線の太さを0にする）
-  lv_obj_set_style_line_width(chart, 0, LV_PART_ITEMS);
+  // データポイントが240個と多いため、マーカー（点）ではなく線で繋いで描画します
+  lv_obj_set_style_size(chart, 0, LV_PART_INDICATOR);
+  lv_obj_set_style_line_width(chart, 1, LV_PART_ITEMS);
 
   // Add series
   ser_co2 = lv_chart_add_series(chart, lv_color_make(150, 255, 150), LV_CHART_AXIS_PRIMARY_Y);

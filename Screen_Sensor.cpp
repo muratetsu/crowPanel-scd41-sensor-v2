@@ -430,13 +430,13 @@ void createSensorUI(lv_obj_t *scr) {
   lv_obj_set_style_text_font(label_co2, &lv_font_montserrat_24, 0); // 大きいフォント
   lv_obj_set_width(label_co2, 65); // 固定幅にする
   lv_obj_set_style_text_align(label_co2, LV_TEXT_ALIGN_RIGHT, 0); // 右揃え
-  lv_obj_align(label_co2, LV_ALIGN_BOTTOM_LEFT, 5, -10);
+  lv_obj_align(label_co2, LV_ALIGN_BOTTOM_LEFT, 5, 0);
   
   label_co2_unit = lv_label_create(scr);
   lv_label_set_text(label_co2_unit, "ppm");
   lv_obj_set_style_text_color(label_co2_unit, lv_color_make(150, 255, 150), 0);
   lv_obj_set_style_text_font(label_co2_unit, &lv_font_montserrat_12, 0); // 小さいフォント
-  lv_obj_align_to(label_co2_unit, label_co2, LV_ALIGN_OUT_RIGHT_BOTTOM, 6, -3);
+  lv_obj_align_to(label_co2_unit, label_co2, LV_ALIGN_OUT_RIGHT_BOTTOM, 2, -3);
   
   // --- Temperature ---
   label_temp = lv_label_create(scr);
@@ -445,13 +445,13 @@ void createSensorUI(lv_obj_t *scr) {
   lv_obj_set_style_text_font(label_temp, &lv_font_montserrat_24, 0);
   lv_obj_set_width(label_temp, 65); // 固定幅にする
   lv_obj_set_style_text_align(label_temp, LV_TEXT_ALIGN_RIGHT, 0); // 右揃え
-  lv_obj_align(label_temp, LV_ALIGN_BOTTOM_MID, -15, -10);
+  lv_obj_align(label_temp, LV_ALIGN_BOTTOM_MID, -15, 0);
 
   label_temp_unit = lv_label_create(scr);
   lv_label_set_text(label_temp_unit, "°C");
   lv_obj_set_style_text_color(label_temp_unit, lv_color_make(255, 150, 150), 0);
   lv_obj_set_style_text_font(label_temp_unit, &lv_font_montserrat_12, 0);
-  lv_obj_align_to(label_temp_unit, label_temp, LV_ALIGN_OUT_RIGHT_BOTTOM, 6, -3);
+  lv_obj_align_to(label_temp_unit, label_temp, LV_ALIGN_OUT_RIGHT_BOTTOM, 2, -3);
   
   // --- Humidity ---
   label_humid = lv_label_create(scr);
@@ -460,13 +460,13 @@ void createSensorUI(lv_obj_t *scr) {
   lv_obj_set_style_text_font(label_humid, &lv_font_montserrat_24, 0);
   lv_obj_set_width(label_humid, 65); // 固定幅にする
   lv_obj_set_style_text_align(label_humid, LV_TEXT_ALIGN_RIGHT, 0); // 右揃え
-  lv_obj_align(label_humid, LV_ALIGN_BOTTOM_RIGHT, -50, -10);
+  lv_obj_align(label_humid, LV_ALIGN_BOTTOM_RIGHT, -50, 0);
 
   label_humid_unit = lv_label_create(scr);
   lv_label_set_text(label_humid_unit, "%");
   lv_obj_set_style_text_color(label_humid_unit, lv_color_make(150, 150, 255), 0);
   lv_obj_set_style_text_font(label_humid_unit, &lv_font_montserrat_12, 0);
-  lv_obj_align_to(label_humid_unit, label_humid, LV_ALIGN_OUT_RIGHT_BOTTOM, 6, -3);
+  lv_obj_align_to(label_humid_unit, label_humid, LV_ALIGN_OUT_RIGHT_BOTTOM, 2, -3);
 
   // Setup LVGL chart for graph
   chart = lv_chart_create(scr);
@@ -475,8 +475,8 @@ void createSensorUI(lv_obj_t *scr) {
   // そのため、画面の左右にはみ出ないように全体の幅を小さくします。
   // チャートを上部に、数値を下部に配置します。
   lv_obj_set_size(chart, screenWidth - 80, 150);
-  // 少し右に寄せて、桁数の多いCO2（左軸）側の余裕を多め（約45px）に取ります
-  lv_obj_align(chart, LV_ALIGN_TOP_RIGHT, -40, 35);
+  // 少し右に寄せて、桁数の多いCO2（左軸）側の余裕を多めに取ります
+  lv_obj_align(chart, LV_ALIGN_TOP_RIGHT, -40, 45);
   lv_chart_set_type(chart, LV_CHART_TYPE_LINE);
   lv_obj_clear_flag(chart, LV_OBJ_FLAG_CLICKABLE); // Pass clicks to screen
 
@@ -489,7 +489,7 @@ void createSensorUI(lv_obj_t *scr) {
   // 左右をギリギリまで使うため、チャート内のパディング（余白）を 0 に設定します
   lv_obj_set_style_pad_left(chart, 0, LV_PART_MAIN);
   lv_obj_set_style_pad_right(chart, 0, LV_PART_MAIN);
-  lv_obj_set_style_pad_top(chart, 5, LV_PART_MAIN);
+  lv_obj_set_style_pad_top(chart, 0, LV_PART_MAIN);
   lv_obj_set_style_pad_bottom(chart, 0, LV_PART_MAIN);
 
   // 初回生成時は現在のモードのポイント数をセット
@@ -516,6 +516,12 @@ void createSensorUI(lv_obj_t *scr) {
   // チャートの標準目盛り（Tick）のフォント。現在有効なのは左Y軸(CO2)のラベルのみ
   lv_obj_set_style_text_font(chart, &lv_font_montserrat_12, LV_PART_TICKS);
   lv_obj_set_style_text_color(chart, lv_color_make(150, 255, 150), LV_PART_TICKS); // CO2 color
+
+  // チャートのデータポイント（マーカー）のサイズを3pxに設定
+  lv_obj_set_style_size(chart, 3, LV_PART_INDICATOR);
+  
+  // 線を非表示にしてマーカーのみを描画する（線の太さを0にする）
+  lv_obj_set_style_line_width(chart, 0, LV_PART_ITEMS);
 
   // Add series
   ser_co2 = lv_chart_add_series(chart, lv_color_make(150, 255, 150), LV_CHART_AXIS_PRIMARY_Y);

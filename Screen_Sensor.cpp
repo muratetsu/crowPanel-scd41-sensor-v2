@@ -95,9 +95,9 @@ static void updateCO2YRange() {
 // ─────────────────────────────────────────────────────────────
 #define TEMP_YSTEP      2.0f  // °C per grid
 #define HUMID_YSTEP     5.0f  // % per grid
-#define SEC_GRID_SCALE 25.0f  // normalized axis units per grid (100 / 4 intervals)
+#define SEC_GRID_SCALE 12.5f  // normalized axis units per grid (100 / 8 intervals)
 #define SEC_Y_CENTER   50.0f  // normalized center (0-100 axis)
-#define SEC_YLABEL_N    5     // 5 horizontal grid lines = 5 labels per series
+#define SEC_YLABEL_N    9     // 9 horizontal grid lines = 9 labels per series
 
 static float tempOffset  = 25.0f;
 static float humidOffset = 50.0f;
@@ -131,7 +131,7 @@ static float calcFloatOffset(float *arr, int n, float ystep) {
     }
     if (vmin > vmax) return -1.0f;
     float offset = (vmin + vmax) / 2.0f;
-    float halfSpan = 2.0f * ystep; // +-2グリッド
+    float halfSpan = 4.0f * ystep; // +-4グリッド
     if (latest > 0) {
         if      (offset < latest - halfSpan) offset = ceilf((latest - halfSpan) / ystep) * ystep;
         else if (offset > latest + halfSpan) offset = floorf((latest + halfSpan) / ystep) * ystep;
@@ -168,9 +168,9 @@ static void updateSecondaryYLabels() {
     lv_coord_t lx_h = coords.x2 + 20;  // Humid label X
 
     for (int k = 0; k < SEC_YLABEL_N; k++) {
-        // k=0 → 軸value=0(下端), k=4 → 軸value=100(上端)
-        lv_coord_t y = coords.y2 - (lv_coord_t)(k * 25) * inner_h / 100 - 7;
-        int n = k - 2; // -2, -1, 0, +1, +2
+        // k=0 → 軸value=0(下端), k=8 → 軸value=100(上端)
+        lv_coord_t y = coords.y2 - (lv_coord_t)(k * 12.5f) * inner_h / 100 - 7;
+        int n = k - 4; // -4, -3, -2, -1, 0, +1, +2, +3, +4
         if (ylabel_temp[k]) {
             lv_label_set_text_fmt(ylabel_temp[k], "%d", (int)roundf(tempOffset + n * TEMP_YSTEP));
             lv_obj_set_pos(ylabel_temp[k], lx_t, y);
@@ -499,19 +499,19 @@ void createSensorUI(lv_obj_t *scr) {
   lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_Y, 400, 2000);
   lv_chart_set_range(chart, LV_CHART_AXIS_SECONDARY_Y, 0, 100);
 
-  // 水平グリッド線: hdiv=5 → 5本合計(内部3本+枠2本) = Y軸5ラベル位置と一致
+  // 水平グリッド線: hdiv=9 → 9本合計(内部7本+枠2本) = Y軸9ラベル位置と一致
   // 縦グリッド線: 0 (カスタム vline_objs で代替)
-  lv_chart_set_div_line_count(chart, 5, 0);
+  lv_chart_set_div_line_count(chart, 9, 0);
 
   // X軸: 目盛り線・ラベルなし（カスタム xlabel_objs で代替）
   // draw_size=15 でチャート下の空間は確保しつつ、ラベル非表示
   lv_chart_set_axis_tick(chart, LV_CHART_AXIS_PRIMARY_X, 0, 0, 0, 0, false, 15);
   
-  // Left Y axis (CO2): 5 major ticks (400, 800, 1200, 1600, 2000), draw size: 40px
-  lv_chart_set_axis_tick(chart, LV_CHART_AXIS_PRIMARY_Y, 5, 2, 5, 2, true, 40);
+  // Left Y axis (CO2): 9 major ticks, draw size: 40px
+  lv_chart_set_axis_tick(chart, LV_CHART_AXIS_PRIMARY_Y, 5, 2, 9, 1, true, 40);
   
   // Right Y axis (Temp/Humid): 標準ラベル無効、draw_sizeだけ確保（カスタムラベル使用）
-  lv_chart_set_axis_tick(chart, LV_CHART_AXIS_SECONDARY_Y, 5, 2, 5, 2, false, 30);
+  lv_chart_set_axis_tick(chart, LV_CHART_AXIS_SECONDARY_Y, 5, 2, 9, 1, false, 30);
   
   // チャートの標準目盛り（Tick）のフォント。現在有効なのは左Y軸(CO2)のラベルのみ
   lv_obj_set_style_text_font(chart, &lv_font_montserrat_12, LV_PART_TICKS);

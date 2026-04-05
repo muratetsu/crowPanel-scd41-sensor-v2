@@ -22,5 +22,6 @@ void writeLogToSD(struct tm *timeinfo, uint16_t co2, float temperature, float hu
 void loadHistoryFromSD(struct tm *now);
 void loadDailyHistoryFromSD(struct tm *now);
 void addHistoryData(uint16_t co2, float temp, float humid);
+void updateDailyHistoryInRealTime(uint16_t co2, float temp, float humid);
 
 #endif // HISTORYMANAGER_H

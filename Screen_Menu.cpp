@@ -62,7 +62,7 @@ void createMenuUI(lv_obj_t *scr) {
   lv_obj_center(lbl_dateset);
   lv_obj_add_event_cb(btn_dateset, menu_dateset_cb, LV_EVENT_CLICKED, NULL);
 
-  // 3. Display Date & Time
+  // 3. Sensor Dashboard
   lv_obj_t *btn_dt = lv_btn_create(scr);
   lv_obj_set_size(btn_dt, screenWidth - 60, 46);
   lv_obj_align(btn_dt, LV_ALIGN_TOP_MID, 0, 164);
@@ -70,7 +70,7 @@ void createMenuUI(lv_obj_t *scr) {
   lv_obj_set_style_bg_color(btn_dt, lv_color_make(35, 140, 105), LV_STATE_PRESSED);
   lv_obj_set_style_radius(btn_dt, 10, 0);
   lv_obj_t *lbl_dt = lv_label_create(btn_dt);
-  lv_label_set_text(lbl_dt, LV_SYMBOL_LOOP "  Display Date & Time");
+  lv_label_set_text(lbl_dt, LV_SYMBOL_IMAGE "  Sensor Dashboard");
   lv_obj_set_style_text_color(lbl_dt, lv_color_make(210, 255, 235), 0);
   lv_obj_set_style_text_font(lbl_dt, &lv_font_montserrat_16, 0);
   lv_obj_center(lbl_dt);

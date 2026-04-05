@@ -56,6 +56,65 @@ void addHistoryData(uint16_t co2, float temp, float humid) {
     histHumid[HISTORY_POINTS - 1] = humid;
 }
 
+static uint32_t dailySumCO2_rt = 0;
+static float dailySumTemp_rt = 0;
+static float dailySumHumid_rt = 0;
+static int dailyCount_rt = 0;
+static int _rtModeCurBucket = -1;
+
+void updateDailyHistoryInRealTime(uint16_t co2, float temp, float humid) {
+    if (co2 == 0) return;
+
+    struct tm timeinfo;
+    if (!getLocalTime(&timeinfo, 100)) return;
+
+    // 1バケツ6分間（360秒）。1Dモードと同じバケツ論理を使用。
+    int cur_bkt = (timeinfo.tm_hour * 60 + timeinfo.tm_min) / 6;
+
+    if (_rtModeCurBucket == -1) {
+        _rtModeCurBucket = cur_bkt;
+        dailySumCO2_rt = co2;
+        dailySumTemp_rt = temp;
+        dailySumHumid_rt = humid;
+        dailyCount_rt = 1;
+    } else if (_rtModeCurBucket == cur_bkt) {
+        // 同じバケツ内のデータなので加算
+        dailySumCO2_rt += co2;
+        dailySumTemp_rt += temp;
+        dailySumHumid_rt += humid;
+        dailyCount_rt++;
+    } else {
+        // バケツ境界を越えた。全体をシフト。
+        int diff = (cur_bkt - _rtModeCurBucket + 240) % 240;
+        if (diff > 240) diff = 240;
+
+        for (int step = 0; step < diff; step++) {
+            for (int i = 0; i < HISTORY_DAILY_POINTS - 1; i++) {
+                dailyHistCO2[i] = dailyHistCO2[i+1];
+                dailyHistTemp[i] = dailyHistTemp[i+1];
+                dailyHistHumid[i] = dailyHistHumid[i+1];
+            }
+            dailyHistCO2[HISTORY_DAILY_POINTS - 1] = 0;
+            dailyHistTemp[HISTORY_DAILY_POINTS - 1] = 0;
+            dailyHistHumid[HISTORY_DAILY_POINTS - 1] = 0;
+        }
+
+        // 新しいバケツを開始
+        _rtModeCurBucket = cur_bkt;
+        dailySumCO2_rt = co2;
+        dailySumTemp_rt = temp;
+        dailySumHumid_rt = humid;
+        dailyCount_rt = 1;
+    }
+
+    // 常に最新バケツに暫定移動平均を書き込む
+    if (dailyCount_rt > 0) {
+        dailyHistCO2[HISTORY_DAILY_POINTS - 1] = dailySumCO2_rt / dailyCount_rt;
+        dailyHistTemp[HISTORY_DAILY_POINTS - 1] = dailySumTemp_rt / dailyCount_rt;
+        dailyHistHumid[HISTORY_DAILY_POINTS - 1] = dailySumHumid_rt / dailyCount_rt;
+    }
+}
+
 static void processLogFile(const char* logFileName, time_t &t_cursor, time_t t_target_end) {
     File file = SD.open(logFileName, FILE_READ);
     if (!file) return;

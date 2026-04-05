@@ -310,8 +310,6 @@ static void span_btnm_event_cb(lv_event_t * e) {
     } else if(id == 1 && currentChartMode != 1) {
         currentChartMode = 1;
         Serial.println("[UI] Switched to 1D mode");
-        struct tm timeinfo;
-        if (getLocalTime(&timeinfo, 100)) { loadDailyHistoryFromSD(&timeinfo); }
         lv_chart_set_point_count(chart, HISTORY_DAILY_POINTS);
         updateSecondaryRange();  // オフセットを先に計算
         for (int i = 0; i < HISTORY_DAILY_POINTS; i++) {
@@ -392,22 +390,29 @@ void updateSensorLabel() {
 void addChartData(uint16_t co2, float temp, float humid) {
   // グローバルなメモリバッファにも保存
   addHistoryData(co2, temp, humid);
+  updateDailyHistoryInRealTime(co2, temp, humid);
 
   if (chart == NULL || currentScreen != SCREEN_SENSOR) return;
 
-  // 4H表示の時のみ1分ごとの更新をチャートにリアルタイムに流し込む
   if (currentChartMode == 0) {
+      // 4H表示のチャート更新
       updateCO2YRange();  // CO2 Y軸レンジ更新
       bool secChanged = updateSecondaryRange();
       if (secChanged) {
-          // Temp/Humid の正規化値が変わった→全データ再構築
           repopulateChart();
       } else {
-          // 正規化値は変わらない→最新の1点だけ追加
           lv_chart_set_next_value(chart, ser_co2,   co2   > 0     ? co2            : LV_CHART_POINT_NONE);
           lv_chart_set_next_value(chart, ser_temp,  temp  > 0.0f  ? normTemp(temp)  : LV_CHART_POINT_NONE);
           lv_chart_set_next_value(chart, ser_humid, humid > 0.0f  ? normHumid(humid) : LV_CHART_POINT_NONE);
       }
+      lv_chart_refresh(chart);
+      updateSecondaryYLabels();
+      updateChartGridUI();
+  } else {
+      // 1D表示でのチャート更新（配列全体を再描画）
+      updateCO2YRange();
+      updateSecondaryRange();
+      repopulateChart();
       lv_chart_refresh(chart);
       updateSecondaryYLabels();
       updateChartGridUI();

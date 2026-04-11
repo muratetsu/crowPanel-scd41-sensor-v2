@@ -19,6 +19,14 @@ uint16_t dailyHistCO2[HISTORY_DAILY_POINTS] = {0};
 float dailyHistTemp[HISTORY_DAILY_POINTS] = {0};
 float dailyHistHumid[HISTORY_DAILY_POINTS] = {0};
 
+const uint16_t* getHistCO2() { return histCO2; }
+const float* getHistTemp() { return histTemp; }
+const float* getHistHumid() { return histHumid; }
+
+const uint16_t* getDailyHistCO2() { return dailyHistCO2; }
+const float* getDailyHistTemp() { return dailyHistTemp; }
+const float* getDailyHistHumid() { return dailyHistHumid; }
+
 void initSD() {
   SD_SPI.begin(SD_SCK, SD_MISO, SD_MOSI);
   if (!SD.begin(SD_CS_PIN, SD_SPI, 40000000)) {

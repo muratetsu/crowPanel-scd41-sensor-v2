@@ -43,7 +43,7 @@ static void updateCO2YRange() {
 
     float vmin = 1e9f, vmax = -1e9f;
     int n_points = (currentChartMode == 0) ? HISTORY_POINTS : HISTORY_DAILY_POINTS;
-    uint16_t *data = (currentChartMode == 0) ? histCO2 : dailyHistCO2;
+    const uint16_t *data = (currentChartMode == 0) ? getHistCO2() : getDailyHistCO2();
 
     for (int i = 0; i < n_points; i++) {
         if (data[i] > 0) {
@@ -100,7 +100,7 @@ static lv_coord_t normHumid(float h) {
     return (lv_coord_t)v;
 }
 
-static float calcFloatOffset(float *arr, int n, float ystep) {
+static float calcFloatOffset(const float *arr, int n, float ystep) {
     float vmin = 1e9f, vmax = -1e9f, latest = -1.0f;
     for (int i = 0; i < n; i++) {
         if (arr[i] > 0) {
@@ -125,9 +125,9 @@ static float calcFloatOffset(float *arr, int n, float ystep) {
 static void repopulateChart() {
     if (chart == NULL) return;
     int n = (currentChartMode == 0) ? HISTORY_POINTS : HISTORY_DAILY_POINTS;
-    uint16_t *cArr = (currentChartMode == 0) ? histCO2   : dailyHistCO2;
-    float    *tArr = (currentChartMode == 0) ? histTemp  : dailyHistTemp;
-    float    *hArr = (currentChartMode == 0) ? histHumid : dailyHistHumid;
+    const uint16_t *cArr = (currentChartMode == 0) ? getHistCO2()   : getDailyHistCO2();
+    const float    *tArr = (currentChartMode == 0) ? getHistTemp()  : getDailyHistTemp();
+    const float    *hArr = (currentChartMode == 0) ? getHistHumid() : getDailyHistHumid();
     lv_chart_set_point_count(chart, n);
     for (int i = 0; i < n; i++) {
         lv_chart_set_next_value(chart, ser_co2,   cArr[i] > 0     ? cArr[i]          : LV_CHART_POINT_NONE);
@@ -161,8 +161,8 @@ static void updateSecondaryYLabels() {
 
 static bool updateSecondaryRange() {
     int n = (currentChartMode == 0) ? HISTORY_POINTS : HISTORY_DAILY_POINTS;
-    float *tArr = (currentChartMode == 0) ? histTemp  : dailyHistTemp;
-    float *hArr = (currentChartMode == 0) ? histHumid : dailyHistHumid;
+    const float *tArr = (currentChartMode == 0) ? getHistTemp()  : getDailyHistTemp();
+    const float *hArr = (currentChartMode == 0) ? getHistHumid() : getDailyHistHumid();
     float newT = calcFloatOffset(tArr, n, TEMP_YSTEP);
     float newH = calcFloatOffset(hArr, n, HUMID_YSTEP);
     if (newT < 0) newT = 25.0f;

@@ -25,6 +25,17 @@ static const uint16_t screenHeight = 240;
 #endif
 
 // ============================================================
+// バックライト設定
+// ============================================================
+#define BACKLIGHT_PIN       27
+#define PWM_FREQ            5000
+#define PWM_RESOLUTION      8
+#define BRIGHTNESS_DAY      128   // 昼間輝度 (6:00〜22:00)
+#define BRIGHTNESS_NIGHT    16    // 夜間輝度 (22:00〜6:00)
+#define BACKLIGHT_HOUR_DAWN 6     // 夜間→昼間切替時刻
+#define BACKLIGHT_HOUR_DUSK 22    // 昼間→夜間切替時刻
+
+// ============================================================
 // 画面管理
 // ============================================================
 enum AppScreen {
@@ -57,6 +68,8 @@ void showWiFiScreen();
 void showSensorScreen();
 void showMenuScreen();
 void showDateSetScreen();
+void setBacklightBrightness(uint8_t brightness);
+void updateBacklightBrightness();
 
 // エラーラベル制御用 (Screen_WiFi に存在)
 void setWiFiErrorLabel(const char *msg);

@@ -35,7 +35,6 @@ float aggSumTemp = 0.0f;
 float aggSumHumid = 0.0f;
 uint16_t aggNumSamples = 0;
 
-#define BACKLIGHT_PIN 27
 
 #if defined(CROWPANEL_35)
   uint16_t calData[5] = { 353, 3568, 269, 3491, 7 };
@@ -278,9 +277,9 @@ void setup() {
   lcd.setTouch(calData);
   delay(100);
 
-  // バックライト ON
-  pinMode(BACKLIGHT_PIN, OUTPUT);
-  digitalWrite(BACKLIGHT_PIN, HIGH);
+  // バックライト設定
+  ledcAttach(BACKLIGHT_PIN, PWM_FREQ, PWM_RESOLUTION);
+  updateBacklightBrightness(); // 初期輝度設定
 
   // LVGL初期化
   lv_init();
@@ -364,9 +363,36 @@ void processMinuteAggregation() {
         aggSumTemp = 0.0f;
         aggSumHumid = 0.0f;
         aggNumSamples = 0;
+
+        // バックライト輝度更新
+        updateBacklightBrightness();
       }
     }
     prevMinute = timeinfo.tm_min;
+  }
+}
+
+// ============================================================
+// バックライト制御
+// ============================================================
+void setBacklightBrightness(uint8_t brightness) {
+  ledcWrite(BACKLIGHT_PIN, brightness);
+}
+
+void updateBacklightBrightness() {
+  struct tm timeinfo;
+  if (getLocalTime(&timeinfo, 0)) {
+    int hour = timeinfo.tm_hour;
+    if (hour >= BACKLIGHT_HOUR_DUSK || hour < BACKLIGHT_HOUR_DAWN) {
+      setBacklightBrightness(BRIGHTNESS_NIGHT);
+      Serial.printf("[Backlight] Night mode (Brightness: %d)\n", BRIGHTNESS_NIGHT);
+    } else {
+      setBacklightBrightness(BRIGHTNESS_DAY);
+      Serial.printf("[Backlight] Day mode (Brightness: %d)\n", BRIGHTNESS_DAY);
+    }
+  } else {
+    // 時刻未取得時はとりあえず昼間輝度にする
+    setBacklightBrightness(BRIGHTNESS_DAY);
   }
 }
 

@@ -387,11 +387,7 @@ void updateSensorLabel() {
   }
 }
 
-void addChartData(uint16_t co2, float temp, float humid) {
-  // グローバルなメモリバッファにも保存
-  addHistoryData(co2, temp, humid);
-  updateDailyHistoryInRealTime(co2, temp, humid);
-
+void updateSensorChartData(uint16_t co2, float temp, float humid) {
   if (chart == NULL || currentScreen != SCREEN_SENSOR) return;
 
   if (currentChartMode == 0) {

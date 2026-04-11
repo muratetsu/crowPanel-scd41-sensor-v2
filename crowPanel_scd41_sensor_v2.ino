@@ -328,6 +328,49 @@ void setup() {
 }
 
 // ============================================================
+// 1分間のセンサーデータ集計と履歴・UI更新処理
+// ============================================================
+void processMinuteAggregation() {
+  static int prevMinute = -1;
+  struct tm timeinfo;
+  if (getLocalTime(&timeinfo, 0)) {
+    if (prevMinute != -1 && prevMinute != timeinfo.tm_min) {
+      if (aggNumSamples > 0) {
+        // 平均を求める
+        uint16_t avgCO2 = aggSumCO2 / aggNumSamples;
+        float avgTemp = aggSumTemp / aggNumSamples;
+        float avgHumid = aggSumHumid / aggNumSamples;
+        
+        // 1. HistoryManagerに保存 (モデルの更新)
+        addHistoryData(avgCO2, avgTemp, avgHumid);
+        updateDailyHistoryInRealTime(avgCO2, avgTemp, avgHumid);
+        
+        // 2. センサー画面のチャートを更新 (Viewの更新)
+        updateSensorChartData(avgCO2, avgTemp, avgHumid);
+        
+        // 3. SDカードへ保存 (永続化)
+        // センサー安定のため、電源投入から3分(180000ms)経過してからSDへログを書き込む
+        if (millis() >= 180000) {
+            writeLogToSD(&timeinfo, avgCO2, avgTemp, avgHumid);
+        } else {
+            Serial.println("[SD] Skip writing log to SD (warming up: < 3 mins)");
+        }
+
+        Serial.printf("[Graph] Aggregated 1min -> CO2: %d, Temp: %.1f, Humid: %.1f (Samples: %d)\n", 
+                      avgCO2, avgTemp, avgHumid, aggNumSamples);
+
+        // クリア
+        aggSumCO2 = 0;
+        aggSumTemp = 0.0f;
+        aggSumHumid = 0.0f;
+        aggNumSamples = 0;
+      }
+    }
+    prevMinute = timeinfo.tm_min;
+  }
+}
+
+// ============================================================
 // Loop
 // ============================================================
 void loop() {
@@ -344,38 +387,7 @@ void loop() {
     }
   }
 
-  // 1分ごとの集計・チャートプロット処理
-  static int prevMinute = -1;
-  struct tm timeinfo;
-  if (getLocalTime(&timeinfo, 0)) {
-    if (prevMinute != -1 && prevMinute != timeinfo.tm_min) {
-      if (aggNumSamples > 0) {
-        // 平均を求めてチャートにプロット
-        uint16_t avgCO2 = aggSumCO2 / aggNumSamples;
-        float avgTemp = aggSumTemp / aggNumSamples;
-        float avgHumid = aggSumHumid / aggNumSamples;
-        
-        addChartData(avgCO2, avgTemp, avgHumid);
-        
-        // センサー安定のため、電源投入から3分(180000ms)経過してからSDへログを書き込む
-        if (millis() >= 180000) {
-            writeLogToSD(&timeinfo, avgCO2, avgTemp, avgHumid);
-        } else {
-            Serial.println("[SD] Skip writing log to SD (warming up: < 3 mins)");
-        }
-
-        Serial.printf("[Graph] Plot -> CO2: %d, Temp: %.1f, Humid: %.1f (Samples: %d)\n", 
-                      avgCO2, avgTemp, avgHumid, aggNumSamples);
-
-        // クリア
-        aggSumCO2 = 0;
-        aggSumTemp = 0.0f;
-        aggSumHumid = 0.0f;
-        aggNumSamples = 0;
-      }
-    }
-    prevMinute = timeinfo.tm_min;
-  }
+  processMinuteAggregation();
 
   delay(5);
 }

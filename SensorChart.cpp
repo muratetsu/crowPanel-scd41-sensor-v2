@@ -271,15 +271,6 @@ void SensorChart_SetMode(int mode) {
 void SensorChart_RefreshAll() {
     if (chart == NULL) return;
     
-    // When mode switches or forced refresh, we load initial daily from SD if needed
-    if (currentChartMode == 1) {
-       struct tm timeinfo;
-       if (getLocalTime(&timeinfo, 100)) { 
-           // In future this can be optimized, but keeping original logic
-           loadDailyHistoryFromSD(&timeinfo); 
-       }
-    }
-    
     updateCO2YRange();
     updateSecondaryRange();
     repopulateChart();
@@ -366,8 +357,8 @@ void SensorChart_Init(lv_obj_t *parent) {
     lv_obj_set_style_text_font(chart, &lv_font_montserrat_12, LV_PART_TICKS);
     lv_obj_set_style_text_color(chart, lv_color_make(150, 255, 150), LV_PART_TICKS); 
 
-    lv_obj_set_style_size(chart, 0, LV_PART_INDICATOR);
-    lv_obj_set_style_line_width(chart, 1, LV_PART_ITEMS);
+    lv_obj_set_style_line_width(chart, 2, LV_PART_ITEMS);
+    lv_obj_set_style_line_rounded(chart, true, LV_PART_ITEMS);
 
     ser_co2 = lv_chart_add_series(chart, lv_color_make(150, 255, 150), LV_CHART_AXIS_PRIMARY_Y);
     ser_temp = lv_chart_add_series(chart, lv_color_make(255, 150, 150), LV_CHART_AXIS_SECONDARY_Y);

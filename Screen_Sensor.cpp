@@ -95,13 +95,13 @@ static void updateCO2YRange() {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Secondary Y軸 (Temp/Humid): 正規化スケール (0-100) に固定、カスタムラベル
+// Secondary Y軸 (Temp/Humid): 正規化スケール (0-1000) に固定、カスタムラベル
 // 1グリッド = 2°C (Temp) = 5% (Humid) — 旧版と同じスケール
 // ─────────────────────────────────────────────────────────────
 #define TEMP_YSTEP      2.0f  // °C per grid
 #define HUMID_YSTEP     5.0f  // % per grid
-#define SEC_GRID_SCALE 12.5f  // normalized axis units per grid (100 / 8 intervals)
-#define SEC_Y_CENTER   50.0f  // normalized center (0-100 axis)
+#define SEC_GRID_SCALE 125.0f // normalized axis units per grid (1000 / 8 intervals)
+#define SEC_Y_CENTER   500.0f // normalized center (0-1000 axis)
 #define SEC_YLABEL_N    9     // 9 horizontal grid lines = 9 labels per series
 
 static float tempOffset  = 25.0f;
@@ -112,15 +112,15 @@ static float prevHumidOffset = -9999.0f;
 static lv_obj_t *ylabel_temp[SEC_YLABEL_N];
 static lv_obj_t *ylabel_humid[SEC_YLABEL_N];
 
-// Temp/Humid データを 0-100 の正規化座標に変換してプロット
+// Temp/Humid データを 0-1000 の正規化座標に変換してプロット
 static lv_coord_t normTemp(float t) {
     float v = SEC_Y_CENTER + (t - tempOffset) / TEMP_YSTEP * SEC_GRID_SCALE;
-    if (v < 0) v = 0; if (v > 100) v = 100;
+    if (v < 0) v = 0; if (v > 1000) v = 1000;
     return (lv_coord_t)v;
 }
 static lv_coord_t normHumid(float h) {
     float v = SEC_Y_CENTER + (h - humidOffset) / HUMID_YSTEP * SEC_GRID_SCALE;
-    if (v < 0) v = 0; if (v > 100) v = 100;
+    if (v < 0) v = 0; if (v > 1000) v = 1000;
     return (lv_coord_t)v;
 }
 
@@ -173,8 +173,8 @@ static void updateSecondaryYLabels() {
     lv_coord_t lx_h = coords.x2 + 24;  // Humid label X
 
     for (int k = 0; k < SEC_YLABEL_N; k++) {
-        // k=0 → 軸value=0(下端), k=8 → 軸value=100(上端)
-        lv_coord_t y = coords.y2 - (lv_coord_t)(k * 12.5f) * inner_h / 100 - 7;
+        // k=0 → 軸value=0(下端), k=8 → 軸value=1000(上端)
+        lv_coord_t y = coords.y2 - (lv_coord_t)(k * inner_h / 8.0f) - 7;
         int n = k - 4; // -4, -3, -2, -1, 0, +1, +2, +3, +4
         if (ylabel_temp[k]) {
             lv_label_set_text_fmt(ylabel_temp[k], "%d", (int)roundf(tempOffset + n * TEMP_YSTEP));
@@ -524,7 +524,7 @@ void createSensorUI(lv_obj_t *scr) {
 
   // Axis ranges (Primary for CO2, Secondary for Temp/Humid)
   lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_Y, 400, 2000);
-  lv_chart_set_range(chart, LV_CHART_AXIS_SECONDARY_Y, 0, 100);
+  lv_chart_set_range(chart, LV_CHART_AXIS_SECONDARY_Y, 0, 1000);
 
   // 水平グリッド線: hdiv=9 → 9本合計(内部7本+枠2本) = Y軸9ラベル位置と一致
   // 縦グリッド線: 0 (カスタム vline_objs で代替)

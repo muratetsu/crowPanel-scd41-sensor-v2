@@ -357,8 +357,12 @@ void loop() {
         
         addChartData(avgCO2, avgTemp, avgHumid);
         
-        // SDへログを書き込む
-        writeLogToSD(&timeinfo, avgCO2, avgTemp, avgHumid);
+        // センサー安定のため、電源投入から3分(180000ms)経過してからSDへログを書き込む
+        if (millis() >= 180000) {
+            writeLogToSD(&timeinfo, avgCO2, avgTemp, avgHumid);
+        } else {
+            Serial.println("[SD] Skip writing log to SD (warming up: < 3 mins)");
+        }
 
         Serial.printf("[Graph] Plot -> CO2: %d, Temp: %.1f, Humid: %.1f (Samples: %d)\n", 
                       avgCO2, avgTemp, avgHumid, aggNumSamples);

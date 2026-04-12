@@ -1,5 +1,6 @@
 #include "Screen_Sensor.h"
 #include "HistoryManager.h"
+#include "Logger.h"
 #include <time.h>
 
 static lv_obj_t *label_datetime = NULL;
@@ -21,7 +22,7 @@ static void span_btnm_event_cb(lv_event_t * e) {
     uint32_t id = lv_btnmatrix_get_selected_btn(obj);
     if(id != SensorChart_GetMode()) {
         SensorChart_SetMode(id);
-        Serial.printf("[UI] Switched to %s mode\n", (id == 0) ? "4H" : "1D");
+        LOG_I("UI", "Switched to %s mode", (id == 0) ? "4H" : "1D");
     }
 }
 
@@ -155,5 +156,5 @@ void createSensorUI(lv_obj_t *scr) {
   // Setup LVGL chart for graph using the extracted component
   SensorChart_Init(scr);
 
-  Serial.println("[UI] Sensor screen created with LVGL chart and axes.");
+  LOG_I("UI", "Sensor screen created with LVGL chart and axes.");
 }

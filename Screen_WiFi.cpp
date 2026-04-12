@@ -1,4 +1,5 @@
 #include "Screen_WiFi.h"
+#include "Logger.h"
 #include <WiFi.h>
 
 static lv_obj_t *ta_ssid      = NULL;
@@ -75,7 +76,7 @@ static void btn_connect_cb(lv_event_t *e) {
   wifiStartTime  = millis();
   bootConnecting = false; // 手動接続
 
-  Serial.printf("[WiFi] Connecting to SSID: %s\n", ssid);
+  LOG_I("WiFi", "Connecting to SSID: %s", ssid);
 }
 
 
@@ -218,7 +219,7 @@ static void btn_scan_cb(lv_event_t *e) {
   lv_timer_handler();
   WiFi.scanNetworks(/*async=*/true, /*show_hidden=*/false);
   scanRequested = true;
-  Serial.println("[Scan] WiFi scan started (async).");
+  LOG_I("Scan", "WiFi scan started (async).");
 }
 
 void checkScanStatus() {
@@ -235,11 +236,11 @@ void checkScanStatus() {
 
   if (n == WIFI_SCAN_FAILED) {
     setWiFiErrorLabel("[!] Scan failed.");
-    Serial.println("[Scan] WiFi scan failed.");
+    LOG_E("Scan", "WiFi scan failed.");
     return;
   }
 
-  Serial.printf("[Scan] Found %d network(s).\n", n);
+  LOG_I("Scan", "Found %d network(s).", n);
   if (label_status) {
     lv_label_set_text(label_status, "Select a network below.");
     lv_obj_set_style_text_color(label_status, lv_color_make(150, 160, 180), 0);
@@ -325,7 +326,7 @@ void createWiFiUI(lv_obj_t *scr) {
   lv_obj_add_event_cb(kb, kb_event_cb, LV_EVENT_ALL, NULL);
   lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN);
 
-  Serial.println("[UI] WiFi setup screen created.");
+  LOG_I("UI", "WiFi setup screen created.");
 
   prefs.begin("wifi_cfg", true);
   String s = prefs.getString("ssid", "");

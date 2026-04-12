@@ -1,4 +1,5 @@
 #include "Screen_Menu.h"
+#include "Logger.h"
 
 static void menu_wifi_cb(lv_event_t *e) {
   if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
@@ -76,5 +77,5 @@ void createMenuUI(lv_obj_t *scr) {
   lv_obj_center(lbl_dt);
   lv_obj_add_event_cb(btn_dt, menu_datetime_cb, LV_EVENT_CLICKED, NULL);
 
-  Serial.println("[UI] Menu screen created.");
+  LOG_I("UI", "Menu screen created.");
 }

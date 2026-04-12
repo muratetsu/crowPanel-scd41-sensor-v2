@@ -1,4 +1,5 @@
 #include "Screen_DateSet.h"
+#include "Logger.h"
 #include <time.h>
 #include <sys/time.h>
 
@@ -47,7 +48,7 @@ static void btn_save_cb(lv_event_t *e) {
     tv.tv_usec = 0;
     settimeofday(&tv, NULL);
 
-    Serial.printf("[UI] Manual time set to: %04d/%02d/%02d %02d:%02d:00\n", y, m, d, h, min);
+    LOG_I("UI", "Manual time set to: %04d/%02d/%02d %02d:%02d:00", y, m, d, h, min);
 
     // Go back to Menu
     showMenuScreen();
@@ -174,5 +175,5 @@ void createDateSetUI(lv_obj_t *scr) {
   lv_obj_center(lbl_save);
   lv_obj_add_event_cb(btn_save, btn_save_cb, LV_EVENT_CLICKED, NULL);
 
-  Serial.println("[UI] DateSet screen created.");
+  LOG_I("UI", "DateSet screen created.");
 }

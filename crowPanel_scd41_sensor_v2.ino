@@ -14,6 +14,7 @@
 #include "Screen_DateSet.h"
 #include "HistoryManager.h"
 #include "SensorManager.h"
+#include "Logger.h"
 
 // ============================================================
 // グローバルオブジェクト定義
@@ -92,7 +93,7 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data) {
 // ============================================================
 void syncNTP() {
   configTime(9 * 3600, 0, "ntp.nict.jp", "time.google.com");
-  Serial.println("[NTP] configTime called (JST, UTC+9).");
+  LOG_I("NTP", "configTime called (JST, UTC+9).");
 }
 
 // ============================================================
@@ -143,7 +144,7 @@ void checkWiFiStatus() {
 
   if (status == WL_CONNECTED) {
     wifiConnecting = false;
-    Serial.println("[WiFi] Connected. IP: " + WiFi.localIP().toString());
+    LOG_I("WiFi", "Connected. IP: %s", WiFi.localIP().toString().c_str());
     syncNTP();
     
     // 過去のログをSDからロード
@@ -152,7 +153,7 @@ void checkWiFiStatus() {
         loadHistoryFromSD(&timeinfo);
         loadDailyHistoryFromSD(&timeinfo);
     } else {
-        Serial.println("[NTP] Failed to obtain time for SD history load");
+        LOG_E("NTP", "Failed to obtain time for SD history load");
     }
 
     showSensorScreen(); // 成功 → 常に画面2
@@ -160,7 +161,7 @@ void checkWiFiStatus() {
   } else if (millis() - wifiStartTime > WIFI_TIMEOUT_MS) {
     wifiConnecting = false;
     WiFi.disconnect();
-    Serial.println("[WiFi] Connection timed out.");
+    LOG_E("WiFi", "Connection timed out.");
 
     if (bootConnecting) {
       bootConnecting = false;
@@ -192,7 +193,7 @@ void bootConnectWithSavedCredentials(const String &ssid, const String &pass) {
   wifiStartTime  = millis();
   bootConnecting = true;
 
-  Serial.printf("[Boot] Auto-connecting to SSID: %s\n", ssid.c_str());
+  LOG_I("Boot", "Auto-connecting to SSID: %s", ssid.c_str());
 }
 
 // ============================================================
@@ -227,7 +228,7 @@ void processSensorData() {
 // ============================================================
 void setup() {
   Serial.begin(115200);
-  Serial.println("\n[Boot] CrowPanel WiFi Config (LVGL) - 3-Screen");
+  LOG_I("Boot", "CrowPanel WiFi Config (LVGL) - 3-Screen");
 
   // ============================================================
   // ★ NVS削除用 (動作確認後は必ずこのブロックを削除すること) ★
@@ -288,15 +289,15 @@ void setup() {
 
   if (savedSSID.length() == 0) {
     // 認証情報なし → メニュー画面へ
-    Serial.println("[Boot] No saved credentials. → Menu screen.");
+    LOG_I("Boot", "No saved credentials. -> Menu screen.");
     showMenuScreen();
   } else {
     // 認証情報あり → 自動接続 (結果は loop() -> checkWiFiStatus() で処理)
-    Serial.printf("[Boot] Found saved SSID: %s → Auto-connecting.\n", savedSSID.c_str());
+    LOG_I("Boot", "Found saved SSID: %s -> Auto-connecting.", savedSSID.c_str());
     bootConnectWithSavedCredentials(savedSSID, savedPass);
   }
 
-  Serial.println("[Boot] Setup done.");
+  LOG_I("Boot", "Setup done.");
 }
 
 // ============================================================
@@ -326,11 +327,14 @@ void processMinuteAggregation() {
       if (millis() >= 180000) {
           writeLogToSD(&timeinfo, avgCO2, avgTemp, avgHumid);
       } else {
-          Serial.println("[SD] Skip writing log to SD (warming up: < 3 mins)");
+          LOG_D("SD", "Skip writing log to SD (warming up: < 3 mins)");
       }
 
-      Serial.printf("[Graph] Aggregated -> CO2: %d, Temp: %.1f, Humid: %.1f (Samples: %d)\n", 
+      LOG_D("Graph", "Aggregated -> CO2: %d, Temp: %.1f, Humid: %.1f (Samples: %d)", 
                     avgCO2, avgTemp, avgHumid, aggNumSamples);
+
+      // メモリ残量などのシステムヘルスを1分間隔（ダミー時は毎秒）で出力
+      LOG_SYS_HEALTH();
 
       // クリア
       aggSumCO2 = 0;
@@ -357,10 +361,10 @@ void updateBacklightBrightness() {
     int hour = timeinfo.tm_hour;
     if (hour >= BACKLIGHT_HOUR_DUSK || hour < BACKLIGHT_HOUR_DAWN) {
       setBacklightBrightness(BRIGHTNESS_NIGHT);
-      Serial.printf("[Backlight] Night mode (Brightness: %d)\n", BRIGHTNESS_NIGHT);
+      LOG_D("Backlight", "Night mode (Brightness: %d)", BRIGHTNESS_NIGHT);
     } else {
       setBacklightBrightness(BRIGHTNESS_DAY);
-      Serial.printf("[Backlight] Day mode (Brightness: %d)\n", BRIGHTNESS_DAY);
+      LOG_D("Backlight", "Day mode (Brightness: %d)", BRIGHTNESS_DAY);
     }
   } else {
     // 時刻未取得時はとりあえず昼間輝度にする

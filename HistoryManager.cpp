@@ -1,4 +1,5 @@
 #include "HistoryManager.h"
+#include "Logger.h"
 #include <SD.h>
 #include <FS.h>
 #include <SPI.h>
@@ -30,9 +31,9 @@ const float* getDailyHistHumid() { return dailyHistHumid; }
 void initSD() {
   SD_SPI.begin(SD_SCK, SD_MISO, SD_MOSI);
   if (!SD.begin(SD_CS_PIN, SD_SPI, 40000000)) {
-    Serial.println("[SD] Mount Failed");
+    LOG_E("SD", "Mount Failed");
   } else {
-    Serial.println("[SD] Initialized");
+    LOG_I("SD", "Initialized");
   }
 }
 
@@ -47,7 +48,7 @@ void writeLogToSD(struct tm *timeinfo, uint16_t co2, float temperature, float hu
     file.printf("%s, %d, %.2f, %.2f\n", timeStr, co2, temperature, humidity);
     file.close();
   } else {
-    Serial.printf("[SD] Failed to open log file: %s\n", logFileName);
+    LOG_E("SD", "Failed to open log file: %s", logFileName);
   }
 }
 
@@ -127,7 +128,7 @@ static void processLogFile(const char* logFileName, time_t &t_cursor, time_t t_t
     File file = SD.open(logFileName, FILE_READ);
     if (!file) return;
 
-    Serial.printf("[SD] Loading log: %s\n", logFileName);
+    LOG_I("SD", "Loading log: %s", logFileName);
       
     while (file.available()) {
         String line = file.readStringUntil('\n');
@@ -213,7 +214,7 @@ void loadHistoryFromSD(struct tm *now) {
      addHistoryData(0, 0, 0);
      t_cursor += 60;
   }
-  Serial.println("[SD] History (4H) loaded to memory.");
+  LOG_I("SD", "History (4H) loaded to memory.");
 }
 
 void loadDailyHistoryFromSD(struct tm *now) {
@@ -241,7 +242,7 @@ void loadDailyHistoryFromSD(struct tm *now) {
      
      File file = SD.open(logFileName, FILE_READ);
      if (file) {
-         Serial.printf("[SD] Loading daily logs from: %s\n", logFileName);
+         LOG_I("SD", "Loading daily logs from: %s", logFileName);
          while(file.available()) {
             String line = file.readStringUntil('\n');
             if (line.length() < 20) continue;
@@ -287,5 +288,5 @@ void loadDailyHistoryFromSD(struct tm *now) {
         dailyHistHumid[i] = dailySumHumid[i] / dailyCount[i];
      }
   }
-  Serial.println("[SD] History (1D) loaded to memory.");
+  LOG_I("SD", "History (1D) loaded to memory.");
 }

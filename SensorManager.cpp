@@ -1,4 +1,5 @@
 #include "SensorManager.h"
+#include "Logger.h"
 #include <Wire.h>
 
 #ifndef USE_DUMMY_SENSOR
@@ -18,22 +19,22 @@ namespace SensorManager {
 
 void init() {
 #ifdef USE_DUMMY_SENSOR
-    Serial.println("[SensorManager] Dummy mode: SCD41 hardware Init skipped.");
+    LOG_I("SensorManager", "Dummy mode: SCD41 hardware Init skipped.");
 #else
     Wire.begin();
     scd4x.begin(Wire, SCD41_I2C_ADDR_62);
 
-    if (scd4x.wakeUp()) { Serial.println("[SCD41] wakeUp error"); }
-    if (scd4x.stopPeriodicMeasurement()) { Serial.println("[SCD41] stop error"); }
-    if (scd4x.reinit()) { Serial.println("[SCD41] reinit error"); }
+    if (scd4x.wakeUp()) { LOG_E("SCD41", "wakeUp error"); }
+    if (scd4x.stopPeriodicMeasurement()) { LOG_E("SCD41", "stop error"); }
+    if (scd4x.reinit()) { LOG_E("SCD41", "reinit error"); }
     
     uint64_t serial0;
     if (!scd4x.getSerialNumber(serial0)) {
-        Serial.printf("[SCD41] Serial: 0x%04x%08x\n", (uint32_t)(serial0 >> 32), (uint32_t)(serial0 & 0xFFFFFFFF));
+        LOG_I("SCD41", "Serial: 0x%04x%08x", (uint32_t)(serial0 >> 32), (uint32_t)(serial0 & 0xFFFFFFFF));
     }
     
-    if (scd4x.startPeriodicMeasurement()) { Serial.println("[SCD41] start error"); }
-    Serial.println("[SensorManager] SCD41 Initialized.");
+    if (scd4x.startPeriodicMeasurement()) { LOG_E("SCD41", "start error"); }
+    LOG_I("SensorManager", "SCD41 Initialized.");
 #endif
 }
 

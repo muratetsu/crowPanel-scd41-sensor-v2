@@ -6,7 +6,6 @@
 #include <SPI.h>
 #include <TFT_eSPI.h>
 #include <lvgl.h>
-#include <SensirionI2cScd4x.h>
 
 #include "Globals.h"
 #include "Screen_WiFi.h"
@@ -14,6 +13,7 @@
 #include "Screen_Menu.h"
 #include "Screen_DateSet.h"
 #include "HistoryManager.h"
+#include "SensorManager.h"
 
 // ============================================================
 // グローバルオブジェクト定義
@@ -23,7 +23,6 @@ Preferences prefs;
 
 AppScreen currentScreen = SCREEN_NONE;
 
-SensirionI2cScd4x scd4x;
 uint16_t currentCO2 = 0;
 float currentTemp = 0.0f;
 float currentHumid = 0.0f;
@@ -197,56 +196,30 @@ void bootConnectWithSavedCredentials(const String &ssid, const String &pass) {
 }
 
 // ============================================================
-// SCD41 センサー初期化・データ取得
+// センサーからのデータ取得
 // ============================================================
-void scd4xInit() {
-  Wire.begin();
-  scd4x.begin(Wire, SCD41_I2C_ADDR_62);
-
-  if (scd4x.wakeUp()) { Serial.println("[SCD41] wakeUp error"); }
-  if (scd4x.stopPeriodicMeasurement()) { Serial.println("[SCD41] stop error"); }
-  if (scd4x.reinit()) { Serial.println("[SCD41] reinit error"); }
-  
-  uint64_t serial0;
-  if (!scd4x.getSerialNumber(serial0)) {
-    Serial.printf("[SCD41] Serial: 0x%04x%08x\n", (uint32_t)(serial0 >> 32), (uint32_t)(serial0 & 0xFFFFFFFF));
-  }
-  
-  if (scd4x.startPeriodicMeasurement()) { Serial.println("[SCD41] start error"); }
-  Serial.println("[SCD41] Initialized.");
-}
-
 void processSensorData() {
-  static uint32_t lastRead = 0;
-  // 5秒間隔で取得
-  if (millis() - lastRead < 5000) return;
-  
-  uint16_t error;
   uint16_t co2 = 0;
   float temperature = 0.0f;
   float humidity = 0.0f;
 
-  bool isDataReady = false;
-  error = scd4x.getDataReadyStatus(isDataReady);
-  // isDataReady indicates if new data is available
-  if (error || !isDataReady) return;
-
-  error = scd4x.readMeasurement(co2, temperature, humidity);
-  if (!error && co2 != 0) {
+  int status = SensorManager::readData(co2, temperature, humidity);
+  
+  if (status == 1) { // 取得成功
     currentCO2 = co2;
     currentTemp = temperature;
     currentHumid = humidity;
     sensorDataValid = true;
-    lastRead = millis();
     
     // 集計用に追加
     aggSumCO2 += co2;
     aggSumTemp += temperature;
     aggSumHumid += humidity;
     aggNumSamples++;
-  } else {
+  } else if (status == -1) { // 取得エラー（Not Readyではなく明確なエラー）
     sensorDataValid = false;
   }
+  // status == 0 (Not Ready) の場合は何もしない（前回値を保持）
 }
 
 // ============================================================
@@ -301,8 +274,8 @@ void setup() {
   indev_drv.read_cb = my_touchpad_read;
   lv_indev_drv_register(&indev_drv);
 
-  // SCD41初期化
-  scd4xInit();
+  // センサー初期化 (ダミー切替などはSensorManager内で完結)
+  SensorManager::init();
 
   // SDカード初期化
   initSD();
@@ -327,48 +300,47 @@ void setup() {
 }
 
 // ============================================================
-// 1分間のセンサーデータ集計と履歴・UI更新処理
+// センサーデータの集計と履歴・UI更新処理
 // ============================================================
 void processMinuteAggregation() {
-  static int prevMinute = -1;
   struct tm timeinfo;
-  if (getLocalTime(&timeinfo, 0)) {
-    if (prevMinute != -1 && prevMinute != timeinfo.tm_min) {
-      if (aggNumSamples > 0) {
-        // 平均を求める
-        uint16_t avgCO2 = aggSumCO2 / aggNumSamples;
-        float avgTemp = aggSumTemp / aggNumSamples;
-        float avgHumid = aggSumHumid / aggNumSamples;
-        
-        // 1. HistoryManagerに保存 (モデルの更新)
-        addHistoryData(avgCO2, avgTemp, avgHumid);
-        updateDailyHistoryInRealTime(avgCO2, avgTemp, avgHumid);
-        
-        // 2. センサー画面のチャートを更新 (Viewの更新)
-        updateSensorChartData(avgCO2, avgTemp, avgHumid);
-        
-        // 3. SDカードへ保存 (永続化)
-        // センサー安定のため、電源投入から3分(180000ms)経過してからSDへログを書き込む
-        if (millis() >= 180000) {
-            writeLogToSD(&timeinfo, avgCO2, avgTemp, avgHumid);
-        } else {
-            Serial.println("[SD] Skip writing log to SD (warming up: < 3 mins)");
-        }
+  bool gotTime = getLocalTime(&timeinfo, 0);
 
-        Serial.printf("[Graph] Aggregated 1min -> CO2: %d, Temp: %.1f, Humid: %.1f (Samples: %d)\n", 
-                      avgCO2, avgTemp, avgHumid, aggNumSamples);
-
-        // クリア
-        aggSumCO2 = 0;
-        aggSumTemp = 0.0f;
-        aggSumHumid = 0.0f;
-        aggNumSamples = 0;
-
-        // バックライト輝度更新
-        updateBacklightBrightness();
+  // 時間が切り替わったか（あるいは高速テストモードか）を判定
+  if (SensorManager::isAggregationTime(&timeinfo, gotTime)) {
+    if (aggNumSamples > 0) {
+      // 平均を求める
+      uint16_t avgCO2 = aggSumCO2 / aggNumSamples;
+      float avgTemp = aggSumTemp / aggNumSamples;
+      float avgHumid = aggSumHumid / aggNumSamples;
+      
+      // 1. HistoryManagerに保存 (モデルの更新)
+      addHistoryData(avgCO2, avgTemp, avgHumid);
+      updateDailyHistoryInRealTime(avgCO2, avgTemp, avgHumid);
+      
+      // 2. センサー画面のチャートを更新 (Viewの更新)
+      updateSensorChartData(avgCO2, avgTemp, avgHumid);
+      
+      // 3. SDカードへ保存 (永続化)
+      // センサー安定のため、電源投入から3分(180000ms)経過してからSDへログを書き込む
+      if (millis() >= 180000) {
+          writeLogToSD(&timeinfo, avgCO2, avgTemp, avgHumid);
+      } else {
+          Serial.println("[SD] Skip writing log to SD (warming up: < 3 mins)");
       }
+
+      Serial.printf("[Graph] Aggregated -> CO2: %d, Temp: %.1f, Humid: %.1f (Samples: %d)\n", 
+                    avgCO2, avgTemp, avgHumid, aggNumSamples);
+
+      // クリア
+      aggSumCO2 = 0;
+      aggSumTemp = 0.0f;
+      aggSumHumid = 0.0f;
+      aggNumSamples = 0;
+
+      // バックライト輝度更新
+      updateBacklightBrightness();
     }
-    prevMinute = timeinfo.tm_min;
   }
 }
 

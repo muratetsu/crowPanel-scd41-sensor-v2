@@ -14,6 +14,7 @@
 #include "Screen_DateSet.h"
 #include "HistoryManager.h"
 #include "SensorManager.h"
+#include "SensorChart.h"
 #include "Logger.h"
 
 // ============================================================
@@ -58,6 +59,11 @@ const uint32_t WIFI_TIMEOUT_MS = 15000;
 
 // --- 日時更新タイマ ---
 static uint32_t lastDateTimeUpdate = 0;
+
+// --- NTP同期状態 ---
+bool     ntpSyncing      = false;
+uint32_t ntpStartTime      = 0;
+const uint32_t NTP_TIMEOUT_MS = 20000; // 20秒待機
 
 // ============================================================
 // LVGL ディスプレイフラッシュコールバック
@@ -145,18 +151,12 @@ void checkWiFiStatus() {
   if (status == WL_CONNECTED) {
     wifiConnecting = false;
     LOG_I("WiFi", "Connected. IP: %s", WiFi.localIP().toString().c_str());
-    syncNTP();
     
-    // 過去のログをSDからロード
-    struct tm timeinfo;
-    if (getLocalTime(&timeinfo, 10000)) {
-        loadHistoryFromSD(&timeinfo);
-        loadDailyHistoryFromSD(&timeinfo);
-    } else {
-        LOG_E("NTP", "Failed to obtain time for SD history load");
-    }
+    syncNTP();
+    ntpSyncing = true;
+    ntpStartTime = millis();
 
-    showSensorScreen(); // 成功 → 常に画面2
+    showSensorScreen(); // ひとまず画面2へ遷移（時刻同期はバックグラウンドで継続）
 
   } else if (millis() - wifiStartTime > WIFI_TIMEOUT_MS) {
     wifiConnecting = false;
@@ -172,6 +172,36 @@ void checkWiFiStatus() {
     }
   }
 }
+
+// ============================================================
+// NTP同期状態チェック (loop() から呼ぶ)
+// ============================================================
+void checkNTPStatus() {
+  if (!ntpSyncing) return;
+
+  struct tm timeinfo;
+  if (getLocalTime(&timeinfo, 0)) { // タイムアウト0で非ブロッキング
+    ntpSyncing = false;
+    LOG_I("NTP", "Time synchronized successfully.");
+
+    // 時刻が取れたので履歴をロード
+    loadHistoryFromSD(&timeinfo);
+    loadDailyHistoryFromSD(&timeinfo);
+
+    // チャートに履歴データを反映
+    SensorChart_RefreshAll();
+
+    // 輝度も再計算
+    updateBacklightBrightness();
+  } 
+  else if (millis() - ntpStartTime > NTP_TIMEOUT_MS) {
+    ntpSyncing = false;
+    LOG_E("NTP", "Failed to obtain time (Timeout). History load skipped.");
+    
+    // 失敗しても再試行などはせず、次の自動集計タイミング等で getLocalTime されるのを待つ
+  }
+}
+
 
 // ============================================================
 // 起動時: 接続中画面を出してNVS認証情報で自動接続
@@ -378,6 +408,7 @@ void updateBacklightBrightness() {
 void loop() {
   lv_timer_handler();   // LVGLタイマー処理 (描画・イベント)
   checkWiFiStatus();    // WiFi接続状態チェック
+  checkNTPStatus();     // NTP同期状態チェック
   checkScanStatus();    // WiFiスキャン完了チェック
 
   processSensorData();  // センサーデータ取得

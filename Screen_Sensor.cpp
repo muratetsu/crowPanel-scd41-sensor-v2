@@ -48,7 +48,7 @@ void updateSensorLabel() {
 
   struct tm timeinfo;
   if (!getLocalTime(&timeinfo, 10)) {
-    lv_label_set_text(label_datetime, "----/--/--\n  --:--:--");
+    lv_label_set_text(label_datetime, "----/--/-- --:--:--");
     return;
   }
 

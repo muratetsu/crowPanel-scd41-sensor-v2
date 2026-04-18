@@ -326,6 +326,27 @@ void SensorChart_Reset() {
 void SensorChart_Init(lv_obj_t *parent) {
     sensor_screen_parent = parent;
     
+    // Create chart background behind everything
+    lv_obj_t *chart_bg = lv_obj_create(parent);
+    lv_obj_remove_style_all(chart_bg);
+    lv_obj_set_size(chart_bg, screenWidth - 80, 150);
+    lv_obj_align(chart_bg, LV_ALIGN_TOP_RIGHT, -40, 45);
+    lv_obj_set_style_bg_opa(chart_bg, LV_OPA_COVER, 0);
+    lv_obj_set_style_bg_color(chart_bg, lv_color_make(20, 25, 45), 0);
+    lv_obj_set_style_border_color(chart_bg, lv_color_make(60, 70, 90), 0);
+    lv_obj_set_style_border_width(chart_bg, 1, 0);
+
+    for (int k = 0; k < GRID_MARKS; k++) {
+        lv_obj_t *vl = lv_obj_create(parent);
+        lv_obj_remove_style_all(vl);
+        lv_obj_set_style_bg_opa(vl, LV_OPA_COVER, 0);
+        lv_obj_set_style_bg_color(vl, lv_color_make(60, 70, 90), 0);
+        lv_obj_set_style_radius(vl, 0, 0);
+        lv_obj_clear_flag(vl, LV_OBJ_FLAG_CLICKABLE);
+        lv_obj_set_size(vl, 1, 1); 
+        vline_objs[k] = vl;
+    }
+
     chart = lv_chart_create(parent);
     
     lv_obj_set_size(chart, screenWidth - 80, 150);
@@ -333,9 +354,8 @@ void SensorChart_Init(lv_obj_t *parent) {
     lv_chart_set_type(chart, LV_CHART_TYPE_LINE);
     lv_obj_clear_flag(chart, LV_OBJ_FLAG_CLICKABLE); 
 
-    lv_obj_set_style_bg_color(chart, lv_color_make(20, 25, 45), LV_PART_MAIN);
-    lv_obj_set_style_border_color(chart, lv_color_make(60, 70, 90), LV_PART_MAIN);
-    lv_obj_set_style_border_width(chart, 1, LV_PART_MAIN);
+    lv_obj_set_style_bg_opa(chart, LV_OPA_TRANSP, LV_PART_MAIN);
+    lv_obj_set_style_border_width(chart, 0, LV_PART_MAIN);
     lv_obj_set_style_line_color(chart, lv_color_make(60, 70, 90), LV_PART_MAIN);
 
     lv_obj_set_style_pad_left(chart, 0, LV_PART_MAIN);
@@ -365,15 +385,6 @@ void SensorChart_Init(lv_obj_t *parent) {
     ser_humid = lv_chart_add_series(chart, lv_color_make(150, 150, 255), LV_CHART_AXIS_SECONDARY_Y);
 
     for (int k = 0; k < GRID_MARKS; k++) {
-        lv_obj_t *vl = lv_obj_create(parent);
-        lv_obj_remove_style_all(vl);
-        lv_obj_set_style_bg_opa(vl, LV_OPA_COVER, 0);
-        lv_obj_set_style_bg_color(vl, lv_color_make(60, 70, 90), 0);
-        lv_obj_set_style_radius(vl, 0, 0);
-        lv_obj_clear_flag(vl, LV_OBJ_FLAG_CLICKABLE);
-        lv_obj_set_size(vl, 1, 1); 
-        vline_objs[k] = vl;
-
         lv_obj_t *xl = lv_label_create(parent);
         lv_obj_set_style_text_font(xl, &lv_font_montserrat_12, 0);
         lv_obj_set_style_text_color(xl, lv_color_make(180, 190, 210), 0);

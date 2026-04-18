@@ -12,6 +12,7 @@
 #include "Screen_Sensor.h"
 #include "Screen_Menu.h"
 #include "Screen_DateSet.h"
+#include "Screen_Test.h"
 #include "HistoryManager.h"
 #include "SensorManager.h"
 #include "SensorChart.h"
@@ -137,6 +138,14 @@ void showDateSetScreen() {
 
   lv_obj_t *scr = lv_obj_create(NULL);
   createDateSetUI(scr);
+  lv_scr_load_anim(scr, LV_SCR_LOAD_ANIM_FADE_ON, 200, 0, true);
+}
+
+void showTestScreen() {
+  currentScreen = SCREEN_TEST;
+
+  lv_obj_t *scr = lv_obj_create(NULL);
+  createTestUI(scr);
   lv_scr_load_anim(scr, LV_SCR_LOAD_ANIM_FADE_ON, 200, 0, true);
 }
 

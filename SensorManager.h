@@ -27,6 +27,10 @@ namespace SensorManager {
     // 本番環境時は1分ごとの変化をNTP時刻から検出し、
     // テスト時はテストを素早く回すため短時間（毎秒）でtrueを返すように切り替えます。
     bool isAggregationTime(struct tm* timeinfo, bool gotTime);
+
+    // テスト画面・デバッグ用
+    uint16_t getLastError();
+    uint16_t getAscStatus();
 }
 
 #endif // SENSOR_MANAGER_H

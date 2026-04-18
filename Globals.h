@@ -43,7 +43,8 @@ enum AppScreen {
   SCREEN_WIFI,      // 画面1: WiFi設定
   SCREEN_SENSOR,    // 画面2: センサー値・グラフ・日時表示
   SCREEN_MENU,      // 画面3: メニュー
-  SCREEN_DATESET    // 画面4: 手動日時設定
+  SCREEN_DATESET,   // 画面4: 手動日時設定
+  SCREEN_TEST       // 画面5: テストモード
 };
 
 // ============================================================
@@ -68,6 +69,7 @@ void showWiFiScreen();
 void showSensorScreen();
 void showMenuScreen();
 void showDateSetScreen();
+void showTestScreen();
 void setBacklightBrightness(uint8_t brightness);
 void updateBacklightBrightness();
 

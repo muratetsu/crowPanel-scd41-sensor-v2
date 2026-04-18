@@ -12,9 +12,13 @@ namespace SensorManager {
 #ifdef USE_DUMMY_SENSOR
     static uint32_t lastRead = 0;
     static uint32_t lastAggTime = 0;
+    static uint16_t last_error_code = 0;
+    static uint16_t cached_asc = 1;
 #else
     static uint32_t lastRead = 0;
     static int prevMinute = -1;
+    static uint16_t last_error_code = 0;
+    static uint16_t cached_asc = 0;
 #endif
 
 void init() {
@@ -27,6 +31,9 @@ void init() {
     if (scd4x.wakeUp()) { LOG_E("SCD41", "wakeUp error"); }
     if (scd4x.stopPeriodicMeasurement()) { LOG_E("SCD41", "stop error"); }
     if (scd4x.reinit()) { LOG_E("SCD41", "reinit error"); }
+    
+    // アイドル状態の間にASC（自動キャリブレーション）の有効ステータスを読み取る
+    scd4x.getAutomaticSelfCalibrationEnabled(cached_asc);
     
     uint64_t serial0;
     if (!scd4x.getSerialNumber(serial0)) {
@@ -58,10 +65,15 @@ int readData(uint16_t &co2, float &temperature, float &humidity) {
 
     bool isDataReady = false;
     uint16_t error = scd4x.getDataReadyStatus(isDataReady);
+    if (error) last_error_code = error; // 保存
+    
     if (error || !isDataReady) return 0; // SENSOR_NOT_READY (or busy)
 
     error = scd4x.readMeasurement(co2, temperature, humidity);
-    if (!error && co2 != 0) {
+    if (error) {
+        last_error_code = error;
+    } else if (co2 != 0) {
+        last_error_code = 0; // 成功でクリア
         lastRead = millis();
         return 1; // SENSOR_SUCCESS
     }
@@ -88,6 +100,14 @@ bool isAggregationTime(struct tm* timeinfo, bool gotTime) {
     
     return timeChanged;
 #endif
+}
+
+uint16_t getLastError() {
+    return last_error_code;
+}
+
+uint16_t getAscStatus() {
+    return cached_asc;
 }
 
 } // namespace SensorManager

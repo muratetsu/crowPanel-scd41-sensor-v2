@@ -19,6 +19,12 @@ static void menu_datetime_cb(lv_event_t *e) {
   }
 }
 
+static void menu_test_cb(lv_event_t *e) {
+  if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
+    showTestScreen();
+  }
+}
+
 void createMenuUI(lv_obj_t *scr) {
   lv_obj_set_style_bg_color(scr, lv_color_make(15, 20, 40), 0);
 
@@ -35,10 +41,24 @@ void createMenuUI(lv_obj_t *scr) {
   lv_obj_set_style_border_width(sep, 0, 0);
   lv_obj_clear_flag(sep, LV_OBJ_FLAG_SCROLLABLE);
 
-  // 1. Wi-Fi Settings
+  // 1. Sensor Dashboard
+  lv_obj_t *btn_dt = lv_btn_create(scr);
+  lv_obj_set_size(btn_dt, screenWidth - 60, 46);
+  lv_obj_align(btn_dt, LV_ALIGN_TOP_MID, 0, 48);
+  lv_obj_set_style_bg_color(btn_dt, lv_color_make(25, 100, 75), 0);
+  lv_obj_set_style_bg_color(btn_dt, lv_color_make(35, 140, 105), LV_STATE_PRESSED);
+  lv_obj_set_style_radius(btn_dt, 10, 0);
+  lv_obj_t *lbl_dt = lv_label_create(btn_dt);
+  lv_label_set_text(lbl_dt, LV_SYMBOL_IMAGE "  Sensor Dashboard");
+  lv_obj_set_style_text_color(lbl_dt, lv_color_make(210, 255, 235), 0);
+  lv_obj_set_style_text_font(lbl_dt, &lv_font_montserrat_16, 0);
+  lv_obj_center(lbl_dt);
+  lv_obj_add_event_cb(btn_dt, menu_datetime_cb, LV_EVENT_CLICKED, NULL);
+
+  // 2. Wi-Fi Settings
   lv_obj_t *btn_wifi = lv_btn_create(scr);
   lv_obj_set_size(btn_wifi, screenWidth - 60, 46);
-  lv_obj_align(btn_wifi, LV_ALIGN_TOP_MID, 0, 48);
+  lv_obj_align(btn_wifi, LV_ALIGN_TOP_MID, 0, 106);
   lv_obj_set_style_bg_color(btn_wifi, lv_color_make(25, 80, 180), 0);
   lv_obj_set_style_bg_color(btn_wifi, lv_color_make(40, 110, 220), LV_STATE_PRESSED);
   lv_obj_set_style_radius(btn_wifi, 10, 0);
@@ -49,10 +69,10 @@ void createMenuUI(lv_obj_t *scr) {
   lv_obj_center(lbl_wifi);
   lv_obj_add_event_cb(btn_wifi, menu_wifi_cb, LV_EVENT_CLICKED, NULL);
 
-  // 2. Set Date & Time
+  // 3. Set Date & Time
   lv_obj_t *btn_dateset = lv_btn_create(scr);
   lv_obj_set_size(btn_dateset, screenWidth - 60, 46);
-  lv_obj_align(btn_dateset, LV_ALIGN_TOP_MID, 0, 106);
+  lv_obj_align(btn_dateset, LV_ALIGN_TOP_MID, 0, 164);
   lv_obj_set_style_bg_color(btn_dateset, lv_color_make(180, 100, 25), 0);
   lv_obj_set_style_bg_color(btn_dateset, lv_color_make(220, 130, 40), LV_STATE_PRESSED);
   lv_obj_set_style_radius(btn_dateset, 10, 0);
@@ -63,19 +83,19 @@ void createMenuUI(lv_obj_t *scr) {
   lv_obj_center(lbl_dateset);
   lv_obj_add_event_cb(btn_dateset, menu_dateset_cb, LV_EVENT_CLICKED, NULL);
 
-  // 3. Sensor Dashboard
-  lv_obj_t *btn_dt = lv_btn_create(scr);
-  lv_obj_set_size(btn_dt, screenWidth - 60, 46);
-  lv_obj_align(btn_dt, LV_ALIGN_TOP_MID, 0, 164);
-  lv_obj_set_style_bg_color(btn_dt, lv_color_make(25, 100, 75), 0);
-  lv_obj_set_style_bg_color(btn_dt, lv_color_make(35, 140, 105), LV_STATE_PRESSED);
-  lv_obj_set_style_radius(btn_dt, 10, 0);
-  lv_obj_t *lbl_dt = lv_label_create(btn_dt);
-  lv_label_set_text(lbl_dt, LV_SYMBOL_IMAGE "  Sensor Dashboard");
-  lv_obj_set_style_text_color(lbl_dt, lv_color_make(210, 255, 235), 0);
-  lv_obj_set_style_text_font(lbl_dt, &lv_font_montserrat_16, 0);
-  lv_obj_center(lbl_dt);
-  lv_obj_add_event_cb(btn_dt, menu_datetime_cb, LV_EVENT_CLICKED, NULL);
+  // 4. Test Mode
+  lv_obj_t *btn_test = lv_btn_create(scr);
+  lv_obj_set_size(btn_test, screenWidth - 60, 46);
+  lv_obj_align(btn_test, LV_ALIGN_TOP_MID, 0, 222);
+  lv_obj_set_style_bg_color(btn_test, lv_color_make(100, 30, 80), 0);
+  lv_obj_set_style_bg_color(btn_test, lv_color_make(140, 50, 110), LV_STATE_PRESSED);
+  lv_obj_set_style_radius(btn_test, 10, 0);
+  lv_obj_t *lbl_test = lv_label_create(btn_test);
+  lv_label_set_text(lbl_test, LV_SYMBOL_WARNING "  Test Mode");
+  lv_obj_set_style_text_color(lbl_test, lv_color_make(255, 200, 220), 0);
+  lv_obj_set_style_text_font(lbl_test, &lv_font_montserrat_16, 0);
+  lv_obj_center(lbl_test);
+  lv_obj_add_event_cb(btn_test, menu_test_cb, LV_EVENT_CLICKED, NULL);
 
   LOG_I("UI", "Menu screen created.");
 }

@@ -335,6 +335,7 @@ void SensorChart_Init(lv_obj_t *parent) {
     lv_obj_set_style_bg_color(chart_bg, lv_color_make(20, 25, 45), 0);
     lv_obj_set_style_border_color(chart_bg, lv_color_make(60, 70, 90), 0);
     lv_obj_set_style_border_width(chart_bg, 1, 0);
+    lv_obj_clear_flag(chart_bg, LV_OBJ_FLAG_CLICKABLE);
 
     for (int k = 0; k < GRID_MARKS; k++) {
         lv_obj_t *vl = lv_obj_create(parent);

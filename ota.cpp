@@ -318,11 +318,16 @@ void otaCheckNow()
 
 void otaStartUpdate()
 {
-    LOG_I("OTA", "User confirmed update. Preparing...");
-    // NVS にフラグを書き込み、再起動で更新フェーズへ移行
+    LOG_I("OTA", "User confirmed update. Starting firmware download...");
+
+    // NVS に pending フラグを立てておく。
+    // これはダウンロード中に電源断が起きた場合の起動時リカバリ用。
+    // (次回起動の otaInit() で検出し、executeFirmwareUpdate() を再実行する)
     nvsSetPending(true, s_serverVersion);
-    delay(200);
-    ESP.restart();
+
+    // WiFi は checkWiFiStatus() で接続済みなので、再起動せずに直接ダウンロードを開始。
+    // この関数内で ESP.restart() が呼ばれるため、ここには戻らない。
+    executeFirmwareUpdate();
 }
 
 const char* otaGetLocalVersion()

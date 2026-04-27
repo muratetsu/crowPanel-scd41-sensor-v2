@@ -14,14 +14,15 @@
 //         │ 🔔 New firmware: v1.2.3     │
 //         │  [Update Now]   [Later]     │
 //         └─────────────────────────────┘
-//     "Update Now" → otaShowProgressScreen() → otaStartUpdate() → 再起動→更新
+//     "Update Now" → otaShowProgressScreen() → otaStartUpdate()
+//                    → executeFirmwareUpdate() → 書き込み完了 → ESP.restart()
 //     "Later"      → バナーを閉じる (次回チェックまで通知なし)
 //
-//   [進捗画面] (再起動→更新実行フェーズで自動表示)
+//   [進捗画面]
 //     otaShowProgressScreen(ver)
-//       → フルスクリーンの進捗画面を表示
-//       → この画面表示後に otaStartUpdate() を呼ぶため、
-//          画面が切り替わった直後から更新が始まる。
+//       → フルスクリーンの進捗画面を表示したまま
+//       → otaStartUpdate() → executeFirmwareUpdate() がダウンロード・書き込みを実行。
+//       → 完了後に ESP.restart() するためスピナーが止まることはない。
 //          LVGLのタイマーループは停止するが画面は維持される。
 
 #include "Screen_OTA.h"
@@ -43,14 +44,13 @@ static void btn_update_cb(lv_event_t* e)
     const char* serverVer = (const char*)lv_event_get_user_data(e);
     LOG_I("OTA", "User confirmed update.");
 
+    // 進捗画面に切り替え、描画を確定させてからダウンロード開始
     otaShowProgressScreen(serverVer);
-    // 進捗画面描画を確定させる
-    lv_timer_handler();
-    delay(100);
-    lv_timer_handler();
+    lv_timer_handler();  // 進捗画面を描画に反映
 
-    // 更新開始 (NVSフラグ書き込み → ESP.restart())
-    // この関数から制御は戻らない。
+    // WiFi 接続済みのまま直接ダウンロード・書き込みを開始する。
+    // executeFirmwareUpdate() は完了後に ESP.restart() するため、この関数から制御は戻らない。
+    // 進捗画面は restart() まで表示されたままになる。
     otaStartUpdate();
 }
 

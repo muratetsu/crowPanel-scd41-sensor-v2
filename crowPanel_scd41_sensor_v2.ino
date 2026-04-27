@@ -13,10 +13,12 @@
 #include "Screen_Menu.h"
 #include "Screen_DateSet.h"
 #include "Screen_Test.h"
+#include "Screen_OTA.h"
 #include "HistoryManager.h"
 #include "SensorManager.h"
 #include "SensorChart.h"
 #include "Logger.h"
+#include "ota.h"
 
 // ============================================================
 // グローバルオブジェクト定義
@@ -165,6 +167,12 @@ void checkWiFiStatus() {
     ntpSyncing = true;
     ntpStartTime = millis();
 
+    // OTA初期化: WiFi接続完了後に呼ぶ。
+    // pendingフラグがある場合はここでファームウェア更新を実行して再起動するため、
+    // 以降の showSensorScreen() などは実行されない。
+    otaInit(onOtaUpdateAvailable);
+    otaScheduleFirstCheck();
+
     showSensorScreen(); // ひとまず画面2へ遷移（時刻同期はバックグラウンドで継続）
 
   } else if (millis() - wifiStartTime > WIFI_TIMEOUT_MS) {
@@ -260,6 +268,18 @@ void processSensorData() {
     sensorDataValid = false;
   }
   // status == 0 (Not Ready) の場合は何もしない（前回値を保持）
+}
+
+// ============================================================
+// Setup
+// ============================================================
+// ============================================================
+// OTA 通知コールバック (ota.cpp から呼ばれる)
+// ============================================================
+void onOtaUpdateAvailable(const char* serverVersion)
+{
+  // バナーを現在の画面上にオーバーレイ表示する
+  otaShowNotifyBanner(serverVersion);
 }
 
 // ============================================================
@@ -419,6 +439,8 @@ void loop() {
   checkWiFiStatus();    // WiFi接続状態チェック
   checkNTPStatus();     // NTP同期状態チェック
   checkScanStatus();    // WiFiスキャン完了チェック
+
+  otaLoop();            // OTA定期チェック
 
   processSensorData();  // センサーデータ取得
 

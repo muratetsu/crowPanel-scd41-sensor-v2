@@ -44,7 +44,8 @@ enum AppScreen {
   SCREEN_SENSOR,    // 画面2: センサー値・グラフ・日時表示
   SCREEN_MENU,      // 画面3: メニュー
   SCREEN_DATESET,   // 画面4: 手動日時設定
-  SCREEN_TEST       // 画面5: テストモード
+  SCREEN_TEST,      // 画面5: テストモード
+  SCREEN_OTA        // 画面6: OTA更新進捗 (内部使用)
 };
 
 // ============================================================
@@ -72,6 +73,9 @@ void showDateSetScreen();
 void showTestScreen();
 void setBacklightBrightness(uint8_t brightness);
 void updateBacklightBrightness();
+
+// OTA 制御関数 (実体は ota.cpp)
+void otaScheduleFirstCheck();  // WiFi接続完了時に .ino から呼ぶ
 
 // エラーラベル制御用 (Screen_WiFi に存在)
 void setWiFiErrorLabel(const char *msg);

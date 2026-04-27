@@ -1,0 +1,19 @@
+// ota_server_config.h.example
+//
+// OTA サーバ設定テンプレート
+//
+// このファイルをコピーして ota_server_config.h を作成し、
+// 実際のURLを設定してください。
+//
+//   cp ota_server_config.h.example ota_server_config.h
+
+#ifndef OTA_SERVER_CONFIG_H
+#define OTA_SERVER_CONFIG_H
+
+// ファームウェア情報ファイルのURL (バージョン文字列が書かれたテキストファイル)
+#define OTA_URL_INFO  "https://your-server.example.com/path/to/info.txt"
+
+// ファームウェアバイナリのURL
+#define OTA_URL_BIN   "https://your-server.example.com/path/to/firmware.bin"
+
+#endif // OTA_SERVER_CONFIG_H

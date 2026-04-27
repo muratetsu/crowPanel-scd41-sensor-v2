@@ -24,6 +24,8 @@
 #include <HTTPClient.h>
 #include <HTTPUpdate.h>
 #include <Preferences.h>
+#include "Screen_OTA.h"
+#include <lvgl.h>
 
 // ============================================================
 // 内部定数・変数
@@ -142,13 +144,27 @@ static void onUpdateFinished() {
 }
 
 static void onUpdateProgress(int cur, int total) {
-    // シリアルには軽量に出力するだけ (LCD描画はこのフェーズでは停止)
     if (total > 0) {
-        static int lastPct = -1;
         int pct = (int)((long)cur * 100 / total);
-        if (pct != lastPct && pct % 10 == 0) {
+        
+        // 1. シリアル出力はログが埋もれないように10%ごとに行う
+        static int lastLogPct = -1;
+        if (pct != lastLogPct && pct % 10 == 0) {
             LOG_I("OTA", "Progress: %d%% (%d / %d bytes)", pct, cur, total);
-            lastPct = pct;
+            lastLogPct = pct;
+        }
+
+        // 2. 画面更新（LVGL）は通信を阻害しないよう間引きを行う
+        // 1%進むのに時間がかかるため、200ms（約5FPS）間隔にして負荷を最小限に抑える
+        static uint32_t lastDrawMs = 0;
+        if (millis() - lastDrawMs > 200) {
+            lastDrawMs = millis();
+            
+            // 画面に進捗%を表示する
+            otaUpdateProgressLabel(pct);
+
+            // LVGLのタスクを回して画面を再描画（これでスピナーが回ります）
+            lv_timer_handler(); 
         }
     }
 }

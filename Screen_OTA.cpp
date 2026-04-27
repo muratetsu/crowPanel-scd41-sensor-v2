@@ -35,13 +35,16 @@
 // ============================================================
 
 static lv_obj_t* s_banner = nullptr;
+static lv_obj_t* s_lbl_status = nullptr;
 
 static void btn_update_cb(lv_event_t* e)
 {
     if (lv_event_get_code(e) != LV_EVENT_CLICKED) return;
 
     // ユーザが「今すぐ更新」を選択
-    const char* serverVer = (const char*)lv_event_get_user_data(e);
+    // 以前はuser_data経由でポインタを受け取っていましたが、
+    // ローカル変数の寿命切れ（ダングリングポインタ）を防ぐためグローバルから取得します
+    const char* serverVer = otaGetServerVersion();
     LOG_I("OTA", "User confirmed update.");
 
     // 進捗画面に切り替え、描画を確定させてからダウンロード開始
@@ -152,7 +155,7 @@ void otaShowProgressScreen(const char* serverVersion)
 
     // バージョン表示
     char verMsg[64];
-    snprintf(verMsg, sizeof(verMsg), "%s  →  %s",
+    snprintf(verMsg, sizeof(verMsg), "%s  ->  %s",
              otaGetLocalVersion(), serverVersion);
     lv_obj_t* lbl_ver = lv_label_create(scr);
     lv_label_set_text(lbl_ver, verMsg);
@@ -170,7 +173,8 @@ void otaShowProgressScreen(const char* serverVersion)
 
     // ステータスラベル
     lv_obj_t* lbl_status = lv_label_create(scr);
-    lv_label_set_text(lbl_status, "Downloading firmware...\nDo not power off.");
+    s_lbl_status = lbl_status;
+    lv_label_set_text(lbl_status, "Downloading firmware... 0%\nDo not power off.");
     lv_obj_set_style_text_color(lbl_status, lv_color_make(255, 210, 80), 0);
     lv_obj_set_style_text_font(lbl_status, &lv_font_montserrat_16, 0);
     lv_obj_set_style_text_align(lbl_status, LV_TEXT_ALIGN_CENTER, 0);
@@ -196,4 +200,13 @@ void otaShowProgressScreen(const char* serverVersion)
     lv_timer_handler();
 
     LOG_I("OTA", "Progress screen displayed.");
+}
+
+void otaUpdateProgressLabel(int pct)
+{
+    if (s_lbl_status) {
+        char buf[64];
+        snprintf(buf, sizeof(buf), "Downloading firmware... %d%%\nDo not power off.", pct);
+        lv_label_set_text(s_lbl_status, buf);
+    }
 }

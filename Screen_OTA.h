@@ -21,5 +21,7 @@ void otaHideNotifyBanner();
 // OTA更新実行中の専用フルスクリーンを表示する。
 // この関数を呼んだ後に otaStartUpdate() を呼ぶこと。
 void otaShowProgressScreen(const char* serverVersion);
+// OTA更新の進捗状況を画面のラベルに反映する。
+void otaUpdateProgressLabel(int pct);
 
 #endif // SCREEN_OTA_H

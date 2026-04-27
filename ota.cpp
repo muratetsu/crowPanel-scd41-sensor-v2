@@ -46,6 +46,9 @@ static uint32_t           s_lastCheckMs     = 0;
 static bool               s_updateAvailable = false;
 static char               s_serverVersion[OTA_VERSION_MAX_LEN] = {0};
 
+static bool               s_startUpdateRequested = false;
+static uint32_t           s_updateReqMs          = 0;
+
 extern Preferences prefs;  // .ino で定義されたグローバルオブジェクトを共有
 
 // ============================================================
@@ -280,8 +283,18 @@ void otaLoop()
 {
     // 更新実行フェーズ中は otaInit() で止まるので通常ここには来ない。
     // 念のため、pending フラグが残っている場合は何もしない。
+    // ただし、otaStartUpdate() でフラグが立った直後は、画面描画を待ってから実行する。
     char pendingVer[OTA_VERSION_MAX_LEN];
-    if (nvsGetPending(pendingVer)) return;
+    if (nvsGetPending(pendingVer)) {
+        if (s_startUpdateRequested) {
+            // UI描画を確実に行わせるため、少し待機してからブロック処理に入る
+            if (millis() - s_updateReqMs > 200) {
+                s_startUpdateRequested = false;
+                executeFirmwareUpdate();
+            }
+        }
+        return;
+    }
 
     // 定期チェック
     uint32_t now = millis();
@@ -325,9 +338,11 @@ void otaStartUpdate()
     // (次回起動の otaInit() で検出し、executeFirmwareUpdate() を再実行する)
     nvsSetPending(true, s_serverVersion);
 
-    // WiFi は checkWiFiStatus() で接続済みなので、再起動せずに直接ダウンロードを開始。
-    // この関数内で ESP.restart() が呼ばれるため、ここには戻らない。
-    executeFirmwareUpdate();
+    // UI(LVGL)の描画ループに制御を一旦戻し、進捗画面を確実に描画させるため、
+    // ここでは直接 executeFirmwareUpdate() を呼ばずにフラグを立てる。
+    // 実際のダウンロード処理は otaLoop() 内で遅延実行される。
+    s_startUpdateRequested = true;
+    s_updateReqMs = millis();
 }
 
 const char* otaGetLocalVersion()

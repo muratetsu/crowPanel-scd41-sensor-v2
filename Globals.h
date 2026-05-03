@@ -7,22 +7,10 @@
 #include <Preferences.h>
 
 // ============================================================
-// ボード設定 (使用する機種に合わせてコメントを切り替える)
+// ボード設定 (解像度)
 // ============================================================
-//#define CROWPANEL_24   // 2.4インチ: 320x240
-#define CROWPANEL_28     // 2.8インチ: 320x240
-//#define CROWPANEL_35   // 3.5インチ: 480x320
-
-#if defined(CROWPANEL_35)
-static const uint16_t screenWidth  = 480;
-static const uint16_t screenHeight = 320;
-#elif defined(CROWPANEL_24)
 static const uint16_t screenWidth  = 320;
 static const uint16_t screenHeight = 240;
-#elif defined(CROWPANEL_28)
-static const uint16_t screenWidth  = 320;
-static const uint16_t screenHeight = 240;
-#endif
 
 // ============================================================
 // バックライト設定

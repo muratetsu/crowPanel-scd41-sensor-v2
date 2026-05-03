@@ -40,13 +40,40 @@ float aggSumHumid = 0.0f;
 uint16_t aggNumSamples = 0;
 
 
-#if defined(CROWPANEL_35)
-  uint16_t calData[5] = { 353, 3568, 269, 3491, 7 };
-#elif defined(CROWPANEL_24)
-  uint16_t calData[5] = { 557, 3263, 369, 3493, 3 };
-#elif defined(CROWPANEL_28)
-  uint16_t calData[5] = { 189, 3416, 359, 3439, 1 };
-#endif
+// ============================================================
+// タッチパネルのキャリブレーション
+// ============================================================
+void touch_calibrate() {
+  uint16_t calData[5];
+  uint8_t calDataOK = 0;
+
+  // NVSからキャリブレーションデータを読み込む
+  prefs.begin("touch", true);
+  if (prefs.getBytesLength("calData") == sizeof(calData)) {
+    prefs.getBytes("calData", calData, sizeof(calData));
+    calDataOK = 1;
+  }
+  prefs.end();
+
+  if (calDataOK) {
+    lcd.setTouch(calData);
+  } else {
+    // データがない場合はキャリブレーション画面を表示
+    lcd.fillScreen(TFT_BLACK);
+    lcd.setCursor(20, 0);
+    lcd.setTextFont(2);
+    lcd.setTextSize(1);
+    lcd.setTextColor(TFT_WHITE, TFT_BLACK);
+    lcd.println("Touch corners as indicated");
+
+    lcd.calibrateTouch(calData, TFT_MAGENTA, TFT_BLACK, 15);
+
+    // 取得したデータをNVSに保存
+    prefs.begin("touch", false);
+    prefs.putBytes("calData", calData, sizeof(calData));
+    prefs.end();
+  }
+}
 
 // LVGL用バッファ
 static lv_disp_draw_buf_t draw_buf;
@@ -91,9 +118,9 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data) {
     data->state = LV_INDEV_STATE_REL;
   } else {
     data->state   = LV_INDEV_STATE_PR;
-    // Rotation(3)に合わせてタッチ座標を180度反転する
-    data->point.x = screenWidth - touchX;
-    data->point.y = screenHeight - touchY;
+    // calibrateTouch によって Rotation に合わせた座標が取得できるため、そのまま使用する
+    data->point.x = touchX;
+    data->point.y = touchY;
   }
 }
 
@@ -307,7 +334,10 @@ void setup() {
   lcd.begin();
   lcd.setRotation(3);
   lcd.fillScreen(TFT_BLACK);
-  lcd.setTouch(calData);
+  
+  // タッチパネルのキャリブレーション（初回のみ画面表示）
+  touch_calibrate();
+  
   delay(100);
 
   // バックライト設定

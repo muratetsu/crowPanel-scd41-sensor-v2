@@ -150,33 +150,33 @@ void createMenuUI(lv_obj_t *scr) {
   lv_obj_center(lbl3);
   lv_obj_add_event_cb(btn3, menu_dateset_cb, LV_EVENT_CLICKED, NULL);
 
-  // 4. Test Mode
+  // 4. Check for Update (OTA)
   lv_obj_t *btn4 = lv_btn_create(cont);
   lv_obj_set_size(btn4, BTN_W, BTN_H);
-  lv_obj_set_style_bg_color(btn4, lv_color_make(100, 30, 80), 0);
-  lv_obj_set_style_bg_color(btn4, lv_color_make(140, 50, 110), LV_STATE_PRESSED);
+  lv_obj_set_style_bg_color(btn4, lv_color_make(30, 80, 60), 0);
+  lv_obj_set_style_bg_color(btn4, lv_color_make(45, 110, 85), LV_STATE_PRESSED);
   lv_obj_set_style_radius(btn4, 8, 0);
   lv_obj_t *lbl4 = lv_label_create(btn4);
-  lv_label_set_text(lbl4, LV_SYMBOL_WARNING "\nTest Mode");
+  lv_label_set_text(lbl4, LV_SYMBOL_REFRESH "\nUpdate");
   lv_obj_set_style_text_align(lbl4, LV_TEXT_ALIGN_CENTER, 0);
-  lv_obj_set_style_text_color(lbl4, lv_color_make(255, 200, 220), 0);
+  lv_obj_set_style_text_color(lbl4, lv_color_make(180, 255, 210), 0);
   lv_obj_set_style_text_font(lbl4, &lv_font_montserrat_14, 0);
   lv_obj_center(lbl4);
-  lv_obj_add_event_cb(btn4, menu_test_cb, LV_EVENT_CLICKED, NULL);
+  lv_obj_add_event_cb(btn4, menu_ota_cb, LV_EVENT_CLICKED, NULL);
 
-  // 5. Check for Update (OTA)
+  // 5. Test Mode
   lv_obj_t *btn5 = lv_btn_create(cont);
   lv_obj_set_size(btn5, BTN_W, BTN_H);
-  lv_obj_set_style_bg_color(btn5, lv_color_make(30, 80, 60), 0);
-  lv_obj_set_style_bg_color(btn5, lv_color_make(45, 110, 85), LV_STATE_PRESSED);
+  lv_obj_set_style_bg_color(btn5, lv_color_make(100, 30, 80), 0);
+  lv_obj_set_style_bg_color(btn5, lv_color_make(140, 50, 110), LV_STATE_PRESSED);
   lv_obj_set_style_radius(btn5, 8, 0);
   lv_obj_t *lbl5 = lv_label_create(btn5);
-  lv_label_set_text(lbl5, LV_SYMBOL_REFRESH "\nUpdate");
+  lv_label_set_text(lbl5, LV_SYMBOL_WARNING "\nTest Mode");
   lv_obj_set_style_text_align(lbl5, LV_TEXT_ALIGN_CENTER, 0);
-  lv_obj_set_style_text_color(lbl5, lv_color_make(180, 255, 210), 0);
+  lv_obj_set_style_text_color(lbl5, lv_color_make(255, 200, 220), 0);
   lv_obj_set_style_text_font(lbl5, &lv_font_montserrat_14, 0);
   lv_obj_center(lbl5);
-  lv_obj_add_event_cb(btn5, menu_ota_cb, LV_EVENT_CLICKED, NULL);
+  lv_obj_add_event_cb(btn5, menu_test_cb, LV_EVENT_CLICKED, NULL);
 
   LOG_I("UI", "Menu screen created.");
 }

@@ -2,8 +2,10 @@
 #include "HistoryManager.h"
 #include "Logger.h"
 #include <time.h>
+#include <WiFi.h>
 
 static lv_obj_t *label_datetime = NULL;
+static lv_obj_t *label_wifi = NULL;
 static lv_obj_t *label_co2 = NULL;
 static lv_obj_t *label_co2_unit = NULL;
 static lv_obj_t *label_temp = NULL;
@@ -28,6 +30,7 @@ static void span_btnm_event_cb(lv_event_t * e) {
 
 void resetSensorUI_Fields() {
   label_datetime = NULL;
+  label_wifi = NULL;
   label_co2 = NULL;
   label_co2_unit = NULL;
   label_temp = NULL;
@@ -62,6 +65,16 @@ void updateSensorLabel() {
   );
   lv_label_set_text(label_datetime, buf);
 
+  if (label_wifi) {
+    if (WiFi.status() == WL_CONNECTED) {
+      lv_label_set_text(label_wifi, LV_SYMBOL_WIFI);
+      lv_obj_set_style_text_color(label_wifi, lv_color_make(255, 255, 255), 0); // White
+    } else {
+      lv_label_set_text(label_wifi, LV_SYMBOL_WIFI);
+      lv_obj_set_style_text_color(label_wifi, lv_color_make(100, 100, 100), 0); // Dark Gray
+    }
+  }
+
   if (sensorDataValid) {
     if (label_co2) lv_label_set_text_fmt(label_co2, "%d", currentCO2);
     if (label_temp) lv_label_set_text_fmt(label_temp, "%s", String(currentTemp, 1).c_str());
@@ -83,11 +96,17 @@ void createSensorUI(lv_obj_t *scr) {
   lv_obj_add_flag(scr, LV_OBJ_FLAG_CLICKABLE);
   lv_obj_add_event_cb(scr, datetime_touch_cb, LV_EVENT_CLICKED, NULL);
 
+  label_wifi = lv_label_create(scr);
+  lv_label_set_text(label_wifi, LV_SYMBOL_WIFI);
+  lv_obj_set_style_text_color(label_wifi, lv_color_make(255, 255, 255), 0); // initial white
+  lv_obj_set_style_text_font(label_wifi, &lv_font_montserrat_16, 0);
+  lv_obj_align(label_wifi, LV_ALIGN_TOP_LEFT, 5, 7); // slightly lower to align with date text baseline
+
   label_datetime = lv_label_create(scr);
   lv_label_set_text(label_datetime, "----/--/-- --:--");
-  lv_obj_set_style_text_color(label_datetime, lv_color_make(200, 220, 255), 0);
+  lv_obj_set_style_text_color(label_datetime, lv_color_make(255, 255, 255), 0);
   lv_obj_set_style_text_font(label_datetime, &lv_font_montserrat_20, 0); 
-  lv_obj_align(label_datetime, LV_ALIGN_TOP_LEFT, 5, 5);
+  lv_obj_align_to(label_datetime, label_wifi, LV_ALIGN_OUT_RIGHT_MID, 5, 0);
 
   // --- 期間切り替え用ボタングループ (4H / 1D) ---
   span_btnm = lv_btnmatrix_create(scr);

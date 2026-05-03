@@ -388,7 +388,7 @@ void SensorChart_Init(lv_obj_t *parent) {
     for (int k = 0; k < GRID_MARKS; k++) {
         lv_obj_t *xl = lv_label_create(parent);
         lv_obj_set_style_text_font(xl, &lv_font_montserrat_12, 0);
-        lv_obj_set_style_text_color(xl, lv_color_make(180, 190, 210), 0);
+        lv_obj_set_style_text_color(xl, lv_color_make(255, 255, 255), 0);
         lv_label_set_text(xl, "");
         lv_obj_clear_flag(xl, LV_OBJ_FLAG_CLICKABLE);
         xlabel_objs[k] = xl;

@@ -40,7 +40,7 @@ static const char* NVS_KEY_VERSION = "server_ver";   // 更新対象バージョ
 // ビルド時に Arduino IDE の「ツール > ボードメニュー」などから渡すか、
 // 手動でリリースごとに更新することを想定。
 #ifndef OTA_LOCAL_VERSION
-  #define OTA_LOCAL_VERSION  "v0.0.4"
+  #define OTA_LOCAL_VERSION  "v0.0.5"
 #endif
 
 static OtaNotifyCallback  s_notify_cb       = nullptr;

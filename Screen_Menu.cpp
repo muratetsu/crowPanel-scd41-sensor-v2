@@ -35,7 +35,7 @@ static void menu_ota_cb(lv_event_t *e) {
   lv_obj_t *lbl = lv_obj_get_child(btn, 0);
 
   if (WiFi.status() != WL_CONNECTED) {
-    lv_label_set_text(lbl, LV_SYMBOL_WARNING "  No WiFi connection");
+    lv_label_set_text(lbl, LV_SYMBOL_WARNING "\nNo WiFi");
     LOG_E("OTA", "Manual check failed: WiFi not connected.");
     return;
   }
@@ -48,16 +48,16 @@ static void menu_ota_cb(lv_event_t *e) {
 
   // "Checking..." を表示してから即時チェック実行
   // HTTP通信が含まれるため数秒間タッチ応答が遅くなる
-  lv_label_set_text(lbl, LV_SYMBOL_REFRESH "  Checking...");
+  lv_label_set_text(lbl, LV_SYMBOL_REFRESH "\nChecking...");
   lv_timer_handler();  // ラベル更新を描画に反映
 
   otaCheckNow();  // サーバを即時照会 (新版があれば notify_cb → バナー表示)
 
   // チェック完了後にラベルを元に戻す
   if (otaIsUpdateAvailable()) {
-    lv_label_set_text(lbl, LV_SYMBOL_DOWNLOAD "  Update Found!");
+    lv_label_set_text(lbl, LV_SYMBOL_DOWNLOAD "\nFound!");
   } else {
-    lv_label_set_text(lbl, LV_SYMBOL_OK "  Up to Date");
+    lv_label_set_text(lbl, LV_SYMBOL_OK "\nUp to Date");
   }
 }
 
@@ -84,78 +84,95 @@ void createMenuUI(lv_obj_t *scr) {
   lv_obj_set_style_border_width(sep, 0, 0);
   lv_obj_clear_flag(sep, LV_OBJ_FLAG_SCROLLABLE);
 
-  // ボタン共通サイズ・間隔
-  // 240px 画面: タイトル行38px + ボタン5個×38px + 間隔4px×4 = 38+190+16 = 244px → ぴったり収まる
-  const int16_t BTN_W    = screenWidth - 40;
-  const int16_t BTN_H    = 38;
-  const int16_t BTN_GAP  = 4;
-  const int16_t BTN_TOP  = 40;  // sep の下から開始
+  // ボタン共通サイズ・間隔 (2列表示 Flexレイアウト)
+  const int16_t PADDING  = 16;  // 画面両端の余白
+  const int16_t BTN_GAP  = 12;  // ボタン間の隙間
+  const int16_t BTN_W    = (screenWidth - (PADDING * 2) - BTN_GAP) / 2;
+  const int16_t BTN_H    = 65;  // 2行テキスト用に高さを確保
+  const int16_t CONT_Y   = 40;  // sepの下から開始
+
+  // メニュー用のFlexコンテナを作成
+  lv_obj_t *cont = lv_obj_create(scr);
+  lv_obj_set_size(cont, screenWidth, screenHeight - CONT_Y);
+  lv_obj_align(cont, LV_ALIGN_TOP_MID, 0, CONT_Y);
+  
+  // コンテナのスタイル設定
+  lv_obj_set_style_bg_opa(cont, LV_OPA_TRANSP, 0);
+  lv_obj_set_style_border_width(cont, 0, 0);
+  lv_obj_set_style_pad_all(cont, PADDING, 0);
+  lv_obj_set_style_pad_row(cont, BTN_GAP, 0);
+  lv_obj_set_style_pad_column(cont, BTN_GAP, 0);
+  lv_obj_set_scrollbar_mode(cont, LV_SCROLLBAR_MODE_AUTO); // はみ出た場合のみスクロール
+  
+  // Flexレイアウトの設定 (左上から右へ、端で折り返し)
+  lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_ROW_WRAP);
+  lv_obj_set_flex_align(cont, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
 
   // 1. Sensor Dashboard
-  lv_obj_t *btn1 = lv_btn_create(scr);
+  lv_obj_t *btn1 = lv_btn_create(cont);
   lv_obj_set_size(btn1, BTN_W, BTN_H);
-  lv_obj_align(btn1, LV_ALIGN_TOP_MID, 0, BTN_TOP + (BTN_H + BTN_GAP) * 0);
   lv_obj_set_style_bg_color(btn1, lv_color_make(25, 100, 75), 0);
   lv_obj_set_style_bg_color(btn1, lv_color_make(35, 140, 105), LV_STATE_PRESSED);
   lv_obj_set_style_radius(btn1, 8, 0);
   lv_obj_t *lbl1 = lv_label_create(btn1);
-  lv_label_set_text(lbl1, LV_SYMBOL_IMAGE "  Sensor Dashboard");
+  lv_label_set_text(lbl1, LV_SYMBOL_IMAGE "\nDashboard");
+  lv_obj_set_style_text_align(lbl1, LV_TEXT_ALIGN_CENTER, 0);
   lv_obj_set_style_text_color(lbl1, lv_color_make(210, 255, 235), 0);
   lv_obj_set_style_text_font(lbl1, &lv_font_montserrat_14, 0);
   lv_obj_center(lbl1);
   lv_obj_add_event_cb(btn1, menu_datetime_cb, LV_EVENT_CLICKED, NULL);
 
   // 2. Wi-Fi Settings
-  lv_obj_t *btn2 = lv_btn_create(scr);
+  lv_obj_t *btn2 = lv_btn_create(cont);
   lv_obj_set_size(btn2, BTN_W, BTN_H);
-  lv_obj_align(btn2, LV_ALIGN_TOP_MID, 0, BTN_TOP + (BTN_H + BTN_GAP) * 1);
   lv_obj_set_style_bg_color(btn2, lv_color_make(25, 80, 180), 0);
   lv_obj_set_style_bg_color(btn2, lv_color_make(40, 110, 220), LV_STATE_PRESSED);
   lv_obj_set_style_radius(btn2, 8, 0);
   lv_obj_t *lbl2 = lv_label_create(btn2);
-  lv_label_set_text(lbl2, LV_SYMBOL_WIFI "  Wi-Fi Settings");
+  lv_label_set_text(lbl2, LV_SYMBOL_WIFI "\nWi-Fi");
+  lv_obj_set_style_text_align(lbl2, LV_TEXT_ALIGN_CENTER, 0);
   lv_obj_set_style_text_color(lbl2, lv_color_make(220, 235, 255), 0);
   lv_obj_set_style_text_font(lbl2, &lv_font_montserrat_14, 0);
   lv_obj_center(lbl2);
   lv_obj_add_event_cb(btn2, menu_wifi_cb, LV_EVENT_CLICKED, NULL);
 
   // 3. Set Date & Time
-  lv_obj_t *btn3 = lv_btn_create(scr);
+  lv_obj_t *btn3 = lv_btn_create(cont);
   lv_obj_set_size(btn3, BTN_W, BTN_H);
-  lv_obj_align(btn3, LV_ALIGN_TOP_MID, 0, BTN_TOP + (BTN_H + BTN_GAP) * 2);
   lv_obj_set_style_bg_color(btn3, lv_color_make(180, 100, 25), 0);
   lv_obj_set_style_bg_color(btn3, lv_color_make(220, 130, 40), LV_STATE_PRESSED);
   lv_obj_set_style_radius(btn3, 8, 0);
   lv_obj_t *lbl3 = lv_label_create(btn3);
-  lv_label_set_text(lbl3, LV_SYMBOL_SETTINGS "  Set Date & Time");
+  lv_label_set_text(lbl3, LV_SYMBOL_SETTINGS "\nDate/Time");
+  lv_obj_set_style_text_align(lbl3, LV_TEXT_ALIGN_CENTER, 0);
   lv_obj_set_style_text_color(lbl3, lv_color_make(255, 235, 210), 0);
   lv_obj_set_style_text_font(lbl3, &lv_font_montserrat_14, 0);
   lv_obj_center(lbl3);
   lv_obj_add_event_cb(btn3, menu_dateset_cb, LV_EVENT_CLICKED, NULL);
 
   // 4. Test Mode
-  lv_obj_t *btn4 = lv_btn_create(scr);
+  lv_obj_t *btn4 = lv_btn_create(cont);
   lv_obj_set_size(btn4, BTN_W, BTN_H);
-  lv_obj_align(btn4, LV_ALIGN_TOP_MID, 0, BTN_TOP + (BTN_H + BTN_GAP) * 3);
   lv_obj_set_style_bg_color(btn4, lv_color_make(100, 30, 80), 0);
   lv_obj_set_style_bg_color(btn4, lv_color_make(140, 50, 110), LV_STATE_PRESSED);
   lv_obj_set_style_radius(btn4, 8, 0);
   lv_obj_t *lbl4 = lv_label_create(btn4);
-  lv_label_set_text(lbl4, LV_SYMBOL_WARNING "  Test Mode");
+  lv_label_set_text(lbl4, LV_SYMBOL_WARNING "\nTest Mode");
+  lv_obj_set_style_text_align(lbl4, LV_TEXT_ALIGN_CENTER, 0);
   lv_obj_set_style_text_color(lbl4, lv_color_make(255, 200, 220), 0);
   lv_obj_set_style_text_font(lbl4, &lv_font_montserrat_14, 0);
   lv_obj_center(lbl4);
   lv_obj_add_event_cb(btn4, menu_test_cb, LV_EVENT_CLICKED, NULL);
 
-  // 5. Check for Update (OTA) — 条件なしで常時表示
-  lv_obj_t *btn5 = lv_btn_create(scr);
+  // 5. Check for Update (OTA)
+  lv_obj_t *btn5 = lv_btn_create(cont);
   lv_obj_set_size(btn5, BTN_W, BTN_H);
-  lv_obj_align(btn5, LV_ALIGN_TOP_MID, 0, BTN_TOP + (BTN_H + BTN_GAP) * 4);
   lv_obj_set_style_bg_color(btn5, lv_color_make(30, 80, 60), 0);
   lv_obj_set_style_bg_color(btn5, lv_color_make(45, 110, 85), LV_STATE_PRESSED);
   lv_obj_set_style_radius(btn5, 8, 0);
   lv_obj_t *lbl5 = lv_label_create(btn5);
-  lv_label_set_text(lbl5, LV_SYMBOL_REFRESH "  Check for Update");
+  lv_label_set_text(lbl5, LV_SYMBOL_REFRESH "\nUpdate");
+  lv_obj_set_style_text_align(lbl5, LV_TEXT_ALIGN_CENTER, 0);
   lv_obj_set_style_text_color(lbl5, lv_color_make(180, 255, 210), 0);
   lv_obj_set_style_text_font(lbl5, &lv_font_montserrat_14, 0);
   lv_obj_center(lbl5);

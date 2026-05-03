@@ -48,18 +48,17 @@ void updateSensorLabel() {
 
   struct tm timeinfo;
   if (!getLocalTime(&timeinfo, 10)) {
-    lv_label_set_text(label_datetime, "----/--/-- --:--:--");
+    lv_label_set_text(label_datetime, "----/--/-- --:--");
     return;
   }
 
   char buf[40];
-  snprintf(buf, sizeof(buf), "%04d/%02d/%02d %02d:%02d:%02d",
+  snprintf(buf, sizeof(buf), "%04d/%02d/%02d %02d:%02d",
     timeinfo.tm_year + 1900,
     timeinfo.tm_mon + 1,
     timeinfo.tm_mday,
     timeinfo.tm_hour,
-    timeinfo.tm_min,
-    timeinfo.tm_sec
+    timeinfo.tm_min
   );
   lv_label_set_text(label_datetime, buf);
 
@@ -85,7 +84,7 @@ void createSensorUI(lv_obj_t *scr) {
   lv_obj_add_event_cb(scr, datetime_touch_cb, LV_EVENT_CLICKED, NULL);
 
   label_datetime = lv_label_create(scr);
-  lv_label_set_text(label_datetime, "----/--/-- --:--:--");
+  lv_label_set_text(label_datetime, "----/--/-- --:--");
   lv_obj_set_style_text_color(label_datetime, lv_color_make(200, 220, 255), 0);
   lv_obj_set_style_text_font(label_datetime, &lv_font_montserrat_20, 0); 
   lv_obj_align(label_datetime, LV_ALIGN_TOP_LEFT, 5, 5);

@@ -55,7 +55,9 @@ static void menu_ota_cb(lv_event_t *e) {
 
   // チェック完了後にラベルを元に戻す
   if (otaIsUpdateAvailable()) {
-    lv_label_set_text(lbl, LV_SYMBOL_DOWNLOAD "\nFound!");
+    // ボタンのテキストは元に戻し、ダイアログを表示する
+    lv_label_set_text(lbl, LV_SYMBOL_REFRESH "\nUpdate");
+    otaShowNotifyBanner(otaGetServerVersion());
   } else {
     lv_label_set_text(lbl, LV_SYMBOL_OK "\nUp to Date");
   }

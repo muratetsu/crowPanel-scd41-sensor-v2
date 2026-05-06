@@ -40,10 +40,10 @@ static const char* NVS_KEY_VERSION = "server_ver";   // 更新対象バージョ
 // ビルド時に Arduino IDE の「ツール > ボードメニュー」などから渡すか、
 // 手動でリリースごとに更新することを想定。
 #ifndef OTA_LOCAL_VERSION
-  #define OTA_LOCAL_VERSION  "v0.0.5"
+  #define OTA_LOCAL_VERSION  "v0.0.4"
 #endif
 
-static OtaNotifyCallback  s_notify_cb       = nullptr;
+
 static uint32_t           s_lastCheckMs     = 0;
 static bool               s_updateAvailable = false;
 static char               s_serverVersion[OTA_VERSION_MAX_LEN] = {0};
@@ -265,19 +265,14 @@ static void checkForUpdate()
     strncpy(s_serverVersion, serverVer, OTA_VERSION_MAX_LEN - 1);
     s_updateAvailable = true;
     LOG_I("OTA", "New firmware available: %s (local: %s)", serverVer, OTA_LOCAL_VERSION);
-
-    if (s_notify_cb) {
-        s_notify_cb(serverVer);
-    }
 }
 
 // ============================================================
 // 公開API の実装
 // ============================================================
 
-void otaInit(OtaNotifyCallback notify_cb)
+void otaInit()
 {
-    s_notify_cb   = notify_cb;
     s_lastCheckMs = 0;  // 起動直後は即チェックさせない (WiFi接続完了を待つ)
     s_updateAvailable = false;
     memset(s_serverVersion, 0, sizeof(s_serverVersion));

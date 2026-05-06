@@ -3,9 +3,11 @@
 #include "Logger.h"
 #include <time.h>
 #include <WiFi.h>
+#include "ota.h"
 
 static lv_obj_t *label_datetime = NULL;
 static lv_obj_t *label_wifi = NULL;
+static lv_obj_t *label_ota_icon = NULL;
 static lv_obj_t *label_co2 = NULL;
 static lv_obj_t *label_co2_unit = NULL;
 static lv_obj_t *label_temp = NULL;
@@ -31,6 +33,7 @@ static void span_btnm_event_cb(lv_event_t * e) {
 void resetSensorUI_Fields() {
   label_datetime = NULL;
   label_wifi = NULL;
+  label_ota_icon = NULL;
   label_co2 = NULL;
   label_co2_unit = NULL;
   label_temp = NULL;
@@ -72,6 +75,14 @@ void updateSensorLabel() {
     } else {
       lv_label_set_text(label_wifi, LV_SYMBOL_WIFI);
       lv_obj_set_style_text_color(label_wifi, lv_color_make(100, 100, 100), 0); // Dark Gray
+    }
+  }
+
+  if (label_ota_icon) {
+    if (otaIsUpdateAvailable()) {
+      lv_obj_clear_flag(label_ota_icon, LV_OBJ_FLAG_HIDDEN);
+    } else {
+      lv_obj_add_flag(label_ota_icon, LV_OBJ_FLAG_HIDDEN);
     }
   }
 
@@ -125,6 +136,15 @@ void createSensorUI(lv_obj_t *scr) {
   lv_obj_set_style_border_width(span_btnm, 0, 0);
   lv_obj_set_style_pad_all(span_btnm, 2, 0);
   lv_obj_set_style_text_font(span_btnm, &lv_font_montserrat_12, 0);
+
+  // --- OTA Notification Icon ---
+  label_ota_icon = lv_label_create(scr);
+  lv_label_set_text(label_ota_icon, LV_SYMBOL_BELL);
+  lv_obj_set_style_text_color(label_ota_icon, lv_color_make(255, 180, 50), 0); // Orange/Yellow
+  lv_obj_set_style_text_font(label_ota_icon, &lv_font_montserrat_16, 0); // same as wifi
+  // 4H/1Dボタン(span_btnm)の左隣に配置
+  lv_obj_align_to(label_ota_icon, span_btnm, LV_ALIGN_OUT_LEFT_MID, -10, 0);
+  lv_obj_add_flag(label_ota_icon, LV_OBJ_FLAG_HIDDEN); // Hidden by default
 
   // --- CO2 ---
   label_co2 = lv_label_create(scr);

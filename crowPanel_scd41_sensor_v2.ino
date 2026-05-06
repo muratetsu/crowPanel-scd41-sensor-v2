@@ -197,7 +197,7 @@ void checkWiFiStatus() {
     // OTA初期化: WiFi接続完了後に呼ぶ。
     // pendingフラグがある場合はここでファームウェア更新を実行して再起動するため、
     // 以降の showSensorScreen() などは実行されない。
-    otaInit(onOtaUpdateAvailable);
+    otaInit();
     otaScheduleFirstCheck();
 
     showSensorScreen(); // ひとまず画面2へ遷移（時刻同期はバックグラウンドで継続）
@@ -295,18 +295,6 @@ void processSensorData() {
     sensorDataValid = false;
   }
   // status == 0 (Not Ready) の場合は何もしない（前回値を保持）
-}
-
-// ============================================================
-// Setup
-// ============================================================
-// ============================================================
-// OTA 通知コールバック (ota.cpp から呼ばれる)
-// ============================================================
-void onOtaUpdateAvailable(const char* serverVersion)
-{
-  // バナーを現在の画面上にオーバーレイ表示する
-  otaShowNotifyBanner(serverVersion);
 }
 
 // ============================================================

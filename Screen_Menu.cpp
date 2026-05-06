@@ -64,12 +64,12 @@ static void menu_ota_cb(lv_event_t *e) {
 }
 
 void createMenuUI(lv_obj_t *scr) {
-  lv_obj_set_style_bg_color(scr, lv_color_make(15, 20, 40), 0);
+  lv_obj_set_style_bg_color(scr, THEME_BG_MAIN, 0);
 
   // タイトル行 (バージョンを右側に並べて表示)
   lv_obj_t *title = lv_label_create(scr);
   lv_label_set_text(title, "Menu");
-  lv_obj_set_style_text_color(title, lv_color_make(120, 180, 255), 0);
+  lv_obj_set_style_text_color(title, THEME_TEXT_TITLE, 0);
   lv_obj_set_style_text_font(title, &lv_font_montserrat_20, 0);
   lv_obj_align(title, LV_ALIGN_TOP_LEFT, 12, 8);
 
@@ -82,7 +82,7 @@ void createMenuUI(lv_obj_t *scr) {
   lv_obj_t *sep = lv_obj_create(scr);
   lv_obj_set_size(sep, screenWidth - 20, 1);
   lv_obj_align(sep, LV_ALIGN_TOP_MID, 0, 34);
-  lv_obj_set_style_bg_color(sep, lv_color_make(60, 80, 130), 0);
+  lv_obj_set_style_bg_color(sep, THEME_BORDER_LIGHT, 0);
   lv_obj_set_style_border_width(sep, 0, 0);
   lv_obj_clear_flag(sep, LV_OBJ_FLAG_SCROLLABLE);
 
@@ -155,13 +155,13 @@ void createMenuUI(lv_obj_t *scr) {
   // 4. Check for Update (OTA)
   lv_obj_t *btn4 = lv_btn_create(cont);
   lv_obj_set_size(btn4, BTN_W, BTN_H);
-  lv_obj_set_style_bg_color(btn4, lv_color_make(30, 80, 60), 0);
-  lv_obj_set_style_bg_color(btn4, lv_color_make(45, 110, 85), LV_STATE_PRESSED);
+  lv_obj_set_style_bg_color(btn4, lv_color_make(20, 100, 100), 0);
+  lv_obj_set_style_bg_color(btn4, lv_color_make(30, 140, 140), LV_STATE_PRESSED);
   lv_obj_set_style_radius(btn4, 8, 0);
   lv_obj_t *lbl4 = lv_label_create(btn4);
   lv_label_set_text(lbl4, LV_SYMBOL_REFRESH "\nUpdate");
   lv_obj_set_style_text_align(lbl4, LV_TEXT_ALIGN_CENTER, 0);
-  lv_obj_set_style_text_color(lbl4, lv_color_make(180, 255, 210), 0);
+  lv_obj_set_style_text_color(lbl4, lv_color_make(180, 255, 255), 0);
   lv_obj_set_style_text_font(lbl4, &lv_font_montserrat_14, 0);
   lv_obj_center(lbl4);
   lv_obj_add_event_cb(btn4, menu_ota_cb, LV_EVENT_CLICKED, NULL);

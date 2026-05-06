@@ -5,6 +5,7 @@
 #include <lvgl.h>
 #include <TFT_eSPI.h>
 #include <Preferences.h>
+#include "Theme.h"
 
 // ============================================================
 // ボード設定 (解像度)

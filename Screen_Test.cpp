@@ -95,19 +95,19 @@ static void test_timer_cb(lv_timer_t *timer) {
 }
 
 void createTestUI(lv_obj_t *scr) {
-  lv_obj_set_style_bg_color(scr, lv_color_make(15, 20, 40), 0);
+  lv_obj_set_style_bg_color(scr, THEME_BG_MAIN, 0);
 
   // --- Title & Back Button ---
   lv_obj_t *title = lv_label_create(scr);
   lv_label_set_text(title, "Test / Debug Mode");
-  lv_obj_set_style_text_color(title, lv_color_make(120, 180, 255), 0);
+  lv_obj_set_style_text_color(title, THEME_TEXT_TITLE, 0);
   lv_obj_set_style_text_font(title, &lv_font_montserrat_20, 0);
   lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 10);
 
   lv_obj_t *btn_back = lv_btn_create(scr);
   lv_obj_set_size(btn_back, 60, 30);
   lv_obj_align(btn_back, LV_ALIGN_TOP_LEFT, 5, 5);
-  lv_obj_set_style_bg_color(btn_back, lv_color_make(60, 80, 130), 0);
+  lv_obj_set_style_bg_color(btn_back, THEME_BORDER_LIGHT, 0);
   lv_obj_set_style_bg_color(btn_back, lv_color_make(80, 100, 160), LV_STATE_PRESSED);
   lv_obj_add_event_cb(btn_back, btn_back_cb, LV_EVENT_CLICKED, NULL);
   lv_obj_t *lbl_back = lv_label_create(btn_back);
@@ -117,16 +117,16 @@ void createTestUI(lv_obj_t *scr) {
   lv_obj_t *sep = lv_obj_create(scr);
   lv_obj_set_size(sep, screenWidth - 40, 1);
   lv_obj_align(sep, LV_ALIGN_TOP_MID, 0, 40);
-  lv_obj_set_style_bg_color(sep, lv_color_make(60, 80, 130), 0);
+  lv_obj_set_style_bg_color(sep, THEME_BORDER_LIGHT, 0);
   lv_obj_set_style_border_width(sep, 0, 0);
 
   // --- System Info Panel ---
   lv_obj_t *panel = lv_obj_create(scr);
   lv_obj_set_size(panel, screenWidth - 20, 180);
   lv_obj_align(panel, LV_ALIGN_TOP_MID, 0, 45);
-  lv_obj_set_style_bg_color(panel, lv_color_make(25, 30, 50), 0);
+  lv_obj_set_style_bg_color(panel, THEME_BG_PANEL, 0);
   lv_obj_set_style_border_width(panel, 1, 0);
-  lv_obj_set_style_border_color(panel, lv_color_make(60, 80, 130), 0);
+  lv_obj_set_style_border_color(panel, THEME_BORDER_LIGHT, 0);
   // Optional: flex layout
   lv_obj_set_layout(panel, LV_LAYOUT_FLEX);
   lv_obj_set_flex_flow(panel, LV_FLEX_FLOW_COLUMN);

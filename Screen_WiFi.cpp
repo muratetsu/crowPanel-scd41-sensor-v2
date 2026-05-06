@@ -198,9 +198,9 @@ static void buildScanModal(int16_t n) {
     lv_obj_t *rssi_lbl = lv_label_create(item_btn);
     lv_label_set_text_fmt(rssi_lbl, "%ddBm", rssi);
     lv_obj_set_style_text_color(rssi_lbl,
-      rssi >= -60 ? lv_color_make(80, 220, 80) :
-      rssi >= -75 ? lv_color_make(220, 200, 60) :
-                    lv_color_make(220, 80, 80), 0);
+      rssi >= -60 ? THEME_COLOR_GOOD :
+      rssi >= -75 ? THEME_COLOR_OK :
+                    THEME_COLOR_ERROR, 0);
     lv_obj_set_style_text_font(rssi_lbl, &lv_font_montserrat_14, 0);
     lv_obj_align(rssi_lbl, LV_ALIGN_RIGHT_MID, 0, 0);
 
@@ -243,13 +243,13 @@ void checkScanStatus() {
   LOG_I("Scan", "Found %d network(s).", n);
   if (label_status) {
     lv_label_set_text(label_status, "Select a network below.");
-    lv_obj_set_style_text_color(label_status, lv_color_make(150, 160, 180), 0);
+    lv_obj_set_style_text_color(label_status, THEME_TEXT_MUTED, 0);
   }
   buildScanModal(n);
 }
 
 void createWiFiUI(lv_obj_t *scr) {
-  lv_obj_set_style_bg_color(scr, lv_color_make(20, 25, 45), 0);
+  lv_obj_set_style_bg_color(scr, THEME_BG_LIGHT, 0);
 
   lv_obj_t *title = lv_label_create(scr);
   lv_label_set_text(title, LV_SYMBOL_WIFI "  WiFi Setup");
@@ -316,7 +316,7 @@ void createWiFiUI(lv_obj_t *scr) {
   lv_label_set_long_mode(label_status, LV_LABEL_LONG_WRAP);
   lv_obj_set_width(label_status, screenWidth - 10);
   lv_label_set_text(label_status, "Press Scan to find networks, or type SSID manually.");
-  lv_obj_set_style_text_color(label_status, lv_color_make(150, 160, 180), 0);
+  lv_obj_set_style_text_color(label_status, THEME_TEXT_MUTED, 0);
   lv_obj_align(label_status, LV_ALIGN_TOP_LEFT, 5, 98);
 
   kb = lv_keyboard_create(scr);

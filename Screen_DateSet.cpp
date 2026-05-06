@@ -56,11 +56,11 @@ static void btn_save_cb(lv_event_t *e) {
 }
 
 void createDateSetUI(lv_obj_t *scr) {
-  lv_obj_set_style_bg_color(scr, lv_color_make(15, 20, 40), 0);
+  lv_obj_set_style_bg_color(scr, THEME_BG_MAIN, 0);
 
   lv_obj_t *title = lv_label_create(scr);
   lv_label_set_text(title, "Set Date & Time");
-  lv_obj_set_style_text_color(title, lv_color_make(120, 180, 255), 0);
+  lv_obj_set_style_text_color(title, THEME_TEXT_TITLE, 0);
   lv_obj_set_style_text_font(title, &lv_font_montserrat_20, 0);
   lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 10);
 
@@ -159,7 +159,7 @@ void createDateSetUI(lv_obj_t *scr) {
   lv_obj_t *btn_cancel = lv_btn_create(scr);
   lv_obj_set_size(btn_cancel, 90, 44);
   lv_obj_align(btn_cancel, LV_ALIGN_TOP_LEFT, 50, btn_y);
-  lv_obj_set_style_bg_color(btn_cancel, lv_color_make(100, 100, 100), 0);
+  lv_obj_set_style_bg_color(btn_cancel, THEME_TEXT_DARK, 0);
   lv_obj_t *lbl_cancel = lv_label_create(btn_cancel);
   lv_label_set_text(lbl_cancel, "Cancel");
   lv_obj_center(lbl_cancel);

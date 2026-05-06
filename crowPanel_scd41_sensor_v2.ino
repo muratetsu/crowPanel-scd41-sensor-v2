@@ -252,7 +252,7 @@ void checkNTPStatus() {
 // ============================================================
 void bootConnectWithSavedCredentials(const String &ssid, const String &pass) {
   lv_obj_t *scr = lv_scr_act();
-  lv_obj_set_style_bg_color(scr, lv_color_make(15, 20, 40), 0);
+  lv_obj_set_style_bg_color(scr, THEME_BG_MAIN, 0);
 
   lv_obj_t *lbl = lv_label_create(scr);
   lv_label_set_text_fmt(lbl, LV_SYMBOL_WIFI "  Connecting to\n%s ...", ssid.c_str());

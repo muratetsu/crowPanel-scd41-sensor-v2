@@ -335,8 +335,8 @@ void SensorChart_Init(lv_obj_t *parent) {
     lv_obj_set_size(chart_bg, screenWidth - 80, 150);
     lv_obj_align(chart_bg, LV_ALIGN_TOP_RIGHT, -40, 45);
     lv_obj_set_style_bg_opa(chart_bg, LV_OPA_COVER, 0);
-    lv_obj_set_style_bg_color(chart_bg, lv_color_make(20, 25, 45), 0);
-    lv_obj_set_style_border_color(chart_bg, lv_color_make(60, 70, 90), 0);
+    lv_obj_set_style_bg_color(chart_bg, THEME_BG_LIGHT, 0);
+    lv_obj_set_style_border_color(chart_bg, THEME_BORDER_DARK, 0);
     lv_obj_set_style_border_width(chart_bg, 1, 0);
     lv_obj_clear_flag(chart_bg, LV_OBJ_FLAG_CLICKABLE);
 
@@ -344,7 +344,7 @@ void SensorChart_Init(lv_obj_t *parent) {
         lv_obj_t *vl = lv_obj_create(parent);
         lv_obj_remove_style_all(vl);
         lv_obj_set_style_bg_opa(vl, LV_OPA_COVER, 0);
-        lv_obj_set_style_bg_color(vl, lv_color_make(60, 70, 90), 0);
+        lv_obj_set_style_bg_color(vl, THEME_BORDER_DARK, 0);
         lv_obj_set_style_radius(vl, 0, 0);
         lv_obj_clear_flag(vl, LV_OBJ_FLAG_CLICKABLE);
         lv_obj_set_size(vl, 1, 1); 
@@ -360,7 +360,7 @@ void SensorChart_Init(lv_obj_t *parent) {
 
     lv_obj_set_style_bg_opa(chart, LV_OPA_TRANSP, LV_PART_MAIN);
     lv_obj_set_style_border_width(chart, 0, LV_PART_MAIN);
-    lv_obj_set_style_line_color(chart, lv_color_make(60, 70, 90), LV_PART_MAIN);
+    lv_obj_set_style_line_color(chart, THEME_BORDER_DARK, LV_PART_MAIN);
 
     lv_obj_set_style_pad_left(chart, 0, LV_PART_MAIN);
     lv_obj_set_style_pad_right(chart, 0, LV_PART_MAIN);
@@ -379,19 +379,19 @@ void SensorChart_Init(lv_obj_t *parent) {
     lv_chart_set_axis_tick(chart, LV_CHART_AXIS_SECONDARY_Y, 5, 2, 9, 1, false, 30);
     
     lv_obj_set_style_text_font(chart, &lv_font_montserrat_12, LV_PART_TICKS);
-    lv_obj_set_style_text_color(chart, lv_color_make(150, 255, 150), LV_PART_TICKS); 
+    lv_obj_set_style_text_color(chart, THEME_COLOR_CO2, LV_PART_TICKS); 
 
     lv_obj_set_style_line_width(chart, 2, LV_PART_ITEMS);
     lv_obj_set_style_line_rounded(chart, true, LV_PART_ITEMS);
 
-    ser_co2 = lv_chart_add_series(chart, lv_color_make(150, 255, 150), LV_CHART_AXIS_PRIMARY_Y);
-    ser_temp = lv_chart_add_series(chart, lv_color_make(255, 150, 150), LV_CHART_AXIS_SECONDARY_Y);
-    ser_humid = lv_chart_add_series(chart, lv_color_make(150, 150, 255), LV_CHART_AXIS_SECONDARY_Y);
+    ser_co2 = lv_chart_add_series(chart, THEME_COLOR_CO2, LV_CHART_AXIS_PRIMARY_Y);
+    ser_temp = lv_chart_add_series(chart, THEME_COLOR_TEMP, LV_CHART_AXIS_SECONDARY_Y);
+    ser_humid = lv_chart_add_series(chart, THEME_COLOR_HUMID, LV_CHART_AXIS_SECONDARY_Y);
 
     for (int k = 0; k < GRID_MARKS; k++) {
         lv_obj_t *xl = lv_label_create(parent);
         lv_obj_set_style_text_font(xl, &lv_font_montserrat_12, 0);
-        lv_obj_set_style_text_color(xl, lv_color_make(255, 255, 255), 0);
+        lv_obj_set_style_text_color(xl, THEME_TEXT_WHITE, 0);
         lv_label_set_text(xl, "");
         lv_obj_clear_flag(xl, LV_OBJ_FLAG_CLICKABLE);
         xlabel_objs[k] = xl;
@@ -400,14 +400,14 @@ void SensorChart_Init(lv_obj_t *parent) {
     for (int k = 0; k < SEC_YLABEL_N; k++) {
         lv_obj_t *yl_t = lv_label_create(parent);
         lv_obj_set_style_text_font(yl_t, &lv_font_montserrat_12, 0);
-        lv_obj_set_style_text_color(yl_t, lv_color_make(255, 150, 150), 0); 
+        lv_obj_set_style_text_color(yl_t, THEME_COLOR_TEMP, 0); 
         lv_label_set_text(yl_t, "");
         lv_obj_clear_flag(yl_t, LV_OBJ_FLAG_CLICKABLE);
         ylabel_temp[k] = yl_t;
 
         lv_obj_t *yl_h = lv_label_create(parent);
         lv_obj_set_style_text_font(yl_h, &lv_font_montserrat_12, 0);
-        lv_obj_set_style_text_color(yl_h, lv_color_make(150, 150, 255), 0); 
+        lv_obj_set_style_text_color(yl_h, THEME_COLOR_HUMID, 0); 
         lv_label_set_text(yl_h, "");
         lv_obj_clear_flag(yl_h, LV_OBJ_FLAG_CLICKABLE);
         ylabel_humid[k] = yl_h;

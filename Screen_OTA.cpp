@@ -144,7 +144,7 @@ void otaShowProgressScreen(const char* serverVersion)
 
     // 新しいフルスクリーンを作成して即時切替
     lv_obj_t* scr = lv_obj_create(nullptr);
-    lv_obj_set_style_bg_color(scr, lv_color_make(10, 15, 35), 0);
+    lv_obj_set_style_bg_color(scr, THEME_BG_DARK, 0);
 
     // タイトル
     lv_obj_t* title = lv_label_create(scr);

@@ -43,12 +43,12 @@ static void updateCO2YRange() {
 
     float vmin = 1e9f, vmax = -1e9f;
     int n_points = (currentChartMode == 0) ? HISTORY_POINTS : HISTORY_DAILY_POINTS;
-    const uint16_t *data = (currentChartMode == 0) ? getHistCO2() : getDailyHistCO2();
 
     for (int i = 0; i < n_points; i++) {
-        if (data[i] > 0) {
-            if (data[i] < vmin) vmin = data[i];
-            if (data[i] > vmax) vmax = data[i];
+        uint16_t val = (currentChartMode == 0) ? getHistCO2(i) : getDailyHistCO2(i);
+        if (val > 0) {
+            if (val < vmin) vmin = val;
+            if (val > vmax) vmax = val;
         }
     }
 
@@ -60,7 +60,8 @@ static void updateCO2YRange() {
     float offset = (vmin + vmax) / 2.0f;
     float latestVal = -1.0f;
     for (int i = n_points - 1; i >= 0; i--) {
-        if (data[i] > 0) { latestVal = data[i]; break; }
+        uint16_t val = (currentChartMode == 0) ? getHistCO2(i) : getDailyHistCO2(i);
+        if (val > 0) { latestVal = val; break; }
     }
 
     if (latestVal > 0) {
@@ -100,13 +101,14 @@ static lv_coord_t normHumid(float h) {
     return (lv_coord_t)v;
 }
 
-static float calcFloatOffset(const float *arr, int n, float ystep) {
+static float calcFloatOffset(float (*getter)(int), int n, float ystep) {
     float vmin = 1e9f, vmax = -1e9f, latest = -1.0f;
     for (int i = 0; i < n; i++) {
-        if (arr[i] > 0) {
-            if (arr[i] < vmin) vmin = arr[i];
-            if (arr[i] > vmax) vmax = arr[i];
-            latest = arr[i];
+        float val = getter(i);
+        if (val > 0) {
+            if (val < vmin) vmin = val;
+            if (val > vmax) vmax = val;
+            latest = val;
         }
     }
     if (vmin > vmax) return -1.0f;
@@ -125,14 +127,14 @@ static float calcFloatOffset(const float *arr, int n, float ystep) {
 static void repopulateChart() {
     if (chart == NULL) return;
     int n = (currentChartMode == 0) ? HISTORY_POINTS : HISTORY_DAILY_POINTS;
-    const uint16_t *cArr = (currentChartMode == 0) ? getHistCO2()   : getDailyHistCO2();
-    const float    *tArr = (currentChartMode == 0) ? getHistTemp()  : getDailyHistTemp();
-    const float    *hArr = (currentChartMode == 0) ? getHistHumid() : getDailyHistHumid();
     lv_chart_set_point_count(chart, n);
     for (int i = 0; i < n; i++) {
-        lv_chart_set_next_value(chart, ser_co2,   cArr[i] > 0     ? cArr[i]          : LV_CHART_POINT_NONE);
-        lv_chart_set_next_value(chart, ser_temp,  tArr[i] > 0.0f  ? normTemp(tArr[i]) : LV_CHART_POINT_NONE);
-        lv_chart_set_next_value(chart, ser_humid, hArr[i] > 0.0f  ? normHumid(hArr[i]) : LV_CHART_POINT_NONE);
+        uint16_t cVal = (currentChartMode == 0) ? getHistCO2(i)   : getDailyHistCO2(i);
+        float    tVal = (currentChartMode == 0) ? getHistTemp(i)  : getDailyHistTemp(i);
+        float    hVal = (currentChartMode == 0) ? getHistHumid(i) : getDailyHistHumid(i);
+        lv_chart_set_next_value(chart, ser_co2,   cVal > 0     ? cVal          : LV_CHART_POINT_NONE);
+        lv_chart_set_next_value(chart, ser_temp,  tVal > 0.0f  ? normTemp(tVal) : LV_CHART_POINT_NONE);
+        lv_chart_set_next_value(chart, ser_humid, hVal > 0.0f  ? normHumid(hVal) : LV_CHART_POINT_NONE);
     }
 }
 
@@ -159,12 +161,13 @@ static void updateSecondaryYLabels() {
     }
 }
 
+static float getTempData(int i) { return (currentChartMode == 0) ? getHistTemp(i) : getDailyHistTemp(i); }
+static float getHumidData(int i) { return (currentChartMode == 0) ? getHistHumid(i) : getDailyHistHumid(i); }
+
 static bool updateSecondaryRange() {
     int n = (currentChartMode == 0) ? HISTORY_POINTS : HISTORY_DAILY_POINTS;
-    const float *tArr = (currentChartMode == 0) ? getHistTemp()  : getDailyHistTemp();
-    const float *hArr = (currentChartMode == 0) ? getHistHumid() : getDailyHistHumid();
-    float newT = calcFloatOffset(tArr, n, TEMP_YSTEP);
-    float newH = calcFloatOffset(hArr, n, HUMID_YSTEP);
+    float newT = calcFloatOffset(getTempData, n, TEMP_YSTEP);
+    float newH = calcFloatOffset(getHumidData, n, HUMID_YSTEP);
     if (newT < 0) newT = 25.0f;
     if (newH < 0) newH = 50.0f;
 

@@ -8,13 +8,13 @@
 #define HISTORY_DAILY_POINTS 240 // 6分ごとに1プロット (24時間 = 240点)
 
 // チャート用のメモリ内バッファ取得API (読み取り専用)
-const uint16_t* getHistCO2();
-const float* getHistTemp();
-const float* getHistHumid();
+uint16_t getHistCO2(int idx);
+float getHistTemp(int idx);
+float getHistHumid(int idx);
 
-const uint16_t* getDailyHistCO2();
-const float* getDailyHistTemp();
-const float* getDailyHistHumid();
+uint16_t getDailyHistCO2(int idx);
+float getDailyHistTemp(int idx);
+float getDailyHistHumid(int idx);
 
 void initSD();
 void writeLogToSD(struct tm *timeinfo, uint16_t co2, float temperature, float humidity);

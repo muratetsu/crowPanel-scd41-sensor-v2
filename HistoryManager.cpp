@@ -15,18 +15,20 @@ SPIClass SD_SPI;
 uint16_t histCO2[HISTORY_POINTS] = {0};
 float histTemp[HISTORY_POINTS] = {0};
 float histHumid[HISTORY_POINTS] = {0};
+int histIdx = 0;
 
 uint16_t dailyHistCO2[HISTORY_DAILY_POINTS] = {0};
 float dailyHistTemp[HISTORY_DAILY_POINTS] = {0};
 float dailyHistHumid[HISTORY_DAILY_POINTS] = {0};
+int dailyHistIdx = 0;
 
-const uint16_t* getHistCO2() { return histCO2; }
-const float* getHistTemp() { return histTemp; }
-const float* getHistHumid() { return histHumid; }
+uint16_t getHistCO2(int idx) { int p = histIdx + idx; if (p >= HISTORY_POINTS) p -= HISTORY_POINTS; return histCO2[p]; }
+float getHistTemp(int idx) { int p = histIdx + idx; if (p >= HISTORY_POINTS) p -= HISTORY_POINTS; return histTemp[p]; }
+float getHistHumid(int idx) { int p = histIdx + idx; if (p >= HISTORY_POINTS) p -= HISTORY_POINTS; return histHumid[p]; }
 
-const uint16_t* getDailyHistCO2() { return dailyHistCO2; }
-const float* getDailyHistTemp() { return dailyHistTemp; }
-const float* getDailyHistHumid() { return dailyHistHumid; }
+uint16_t getDailyHistCO2(int idx) { int p = dailyHistIdx + idx; if (p >= HISTORY_DAILY_POINTS) p -= HISTORY_DAILY_POINTS; return dailyHistCO2[p]; }
+float getDailyHistTemp(int idx) { int p = dailyHistIdx + idx; if (p >= HISTORY_DAILY_POINTS) p -= HISTORY_DAILY_POINTS; return dailyHistTemp[p]; }
+float getDailyHistHumid(int idx) { int p = dailyHistIdx + idx; if (p >= HISTORY_DAILY_POINTS) p -= HISTORY_DAILY_POINTS; return dailyHistHumid[p]; }
 
 void initSD() {
   SD_SPI.begin(SD_SCK, SD_MISO, SD_MOSI);
@@ -53,16 +55,10 @@ void writeLogToSD(struct tm *timeinfo, uint16_t co2, float temperature, float hu
 }
 
 void addHistoryData(uint16_t co2, float temp, float humid) {
-    // データを一つ左へシフト
-    for (int i = 0; i < HISTORY_POINTS - 1; i++) {
-        histCO2[i] = histCO2[i+1];
-        histTemp[i] = histTemp[i+1];
-        histHumid[i] = histHumid[i+1];
-    }
-    // 末尾に新データを追加
-    histCO2[HISTORY_POINTS - 1] = co2;
-    histTemp[HISTORY_POINTS - 1] = temp;
-    histHumid[HISTORY_POINTS - 1] = humid;
+    histCO2[histIdx] = co2;
+    histTemp[histIdx] = temp;
+    histHumid[histIdx] = humid;
+    histIdx = (histIdx + 1) % HISTORY_POINTS;
 }
 
 static uint32_t dailySumCO2_rt = 0;
@@ -93,19 +89,15 @@ void updateDailyHistoryInRealTime(uint16_t co2, float temp, float humid) {
         dailySumHumid_rt += humid;
         dailyCount_rt++;
     } else {
-        // バケツ境界を越えた。全体をシフト。
+        // バケツ境界を越えた。リングバッファのインデックスを進める。
         int diff = (cur_bkt - _rtModeCurBucket + 240) % 240;
         if (diff > 240) diff = 240;
 
         for (int step = 0; step < diff; step++) {
-            for (int i = 0; i < HISTORY_DAILY_POINTS - 1; i++) {
-                dailyHistCO2[i] = dailyHistCO2[i+1];
-                dailyHistTemp[i] = dailyHistTemp[i+1];
-                dailyHistHumid[i] = dailyHistHumid[i+1];
-            }
-            dailyHistCO2[HISTORY_DAILY_POINTS - 1] = 0;
-            dailyHistTemp[HISTORY_DAILY_POINTS - 1] = 0;
-            dailyHistHumid[HISTORY_DAILY_POINTS - 1] = 0;
+            dailyHistCO2[dailyHistIdx] = 0;
+            dailyHistTemp[dailyHistIdx] = 0;
+            dailyHistHumid[dailyHistIdx] = 0;
+            dailyHistIdx = (dailyHistIdx + 1) % HISTORY_DAILY_POINTS;
         }
 
         // 新しいバケツを開始
@@ -118,9 +110,10 @@ void updateDailyHistoryInRealTime(uint16_t co2, float temp, float humid) {
 
     // 常に最新バケツに暫定移動平均を書き込む
     if (dailyCount_rt > 0) {
-        dailyHistCO2[HISTORY_DAILY_POINTS - 1] = dailySumCO2_rt / dailyCount_rt;
-        dailyHistTemp[HISTORY_DAILY_POINTS - 1] = dailySumTemp_rt / dailyCount_rt;
-        dailyHistHumid[HISTORY_DAILY_POINTS - 1] = dailySumHumid_rt / dailyCount_rt;
+        int latestIdx = (dailyHistIdx + HISTORY_DAILY_POINTS - 1) % HISTORY_DAILY_POINTS;
+        dailyHistCO2[latestIdx] = dailySumCO2_rt / dailyCount_rt;
+        dailyHistTemp[latestIdx] = dailySumTemp_rt / dailyCount_rt;
+        dailyHistHumid[latestIdx] = dailySumHumid_rt / dailyCount_rt;
     }
 }
 
@@ -173,7 +166,8 @@ static void processLogFile(const char* logFileName, time_t &t_cursor, time_t t_t
 }
 
 void loadHistoryFromSD(struct tm *now) {
-  // バッファをゼロ（無効値）クリア
+  // バッファをゼロ（無効値）クリアし、インデックスをリセット
+  histIdx = 0;
   for (int i=0; i<HISTORY_POINTS; i++) {
       histCO2[i] = 0;
       histTemp[i] = 0;
@@ -288,5 +282,6 @@ void loadDailyHistoryFromSD(struct tm *now) {
         dailyHistHumid[i] = dailySumHumid[i] / dailyCount[i];
      }
   }
+  dailyHistIdx = 0;
   LOG_I("SD", "History (1D) loaded to memory.");
 }

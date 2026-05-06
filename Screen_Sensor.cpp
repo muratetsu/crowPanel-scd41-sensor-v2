@@ -54,14 +54,14 @@ void updateSensorLabel() {
 
   struct tm timeinfo;
   if (!getLocalTime(&timeinfo, 10)) {
-    lv_label_set_text(label_datetime, "----/--/-- --:--");
+    lv_label_set_text(label_datetime, "--- - --:--");
     return;
   }
 
+  const char* months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
   char buf[40];
-  snprintf(buf, sizeof(buf), "%04d/%02d/%02d %02d:%02d",
-    timeinfo.tm_year + 1900,
-    timeinfo.tm_mon + 1,
+  snprintf(buf, sizeof(buf), "%s %d  %02d:%02d",
+    months[timeinfo.tm_mon],
     timeinfo.tm_mday,
     timeinfo.tm_hour,
     timeinfo.tm_min
@@ -114,7 +114,7 @@ void createSensorUI(lv_obj_t *scr) {
   lv_obj_align(label_wifi, LV_ALIGN_TOP_LEFT, 5, 7); // slightly lower to align with date text baseline
 
   label_datetime = lv_label_create(scr);
-  lv_label_set_text(label_datetime, "----/--/-- --:--");
+  lv_label_set_text(label_datetime, "--- - --:--");
   lv_obj_set_style_text_color(label_datetime, lv_color_make(255, 255, 255), 0);
   lv_obj_set_style_text_font(label_datetime, &lv_font_montserrat_20, 0); 
   lv_obj_align_to(label_datetime, label_wifi, LV_ALIGN_OUT_RIGHT_MID, 5, 0);

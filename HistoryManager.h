@@ -16,11 +16,12 @@ uint16_t getDailyHistCO2(int idx);
 float getDailyHistTemp(int idx);
 float getDailyHistHumid(int idx);
 
-void initSD();
-void writeLogToSD(struct tm *timeinfo, uint16_t co2, float temperature, float humidity);
-void loadHistoryFromSD(struct tm *now);
-void loadDailyHistoryFromSD(struct tm *now);
 void addHistoryData(uint16_t co2, float temp, float humid);
 void updateDailyHistoryInRealTime(uint16_t co2, float temp, float humid);
+
+// SD読み込み時のリセット・セット用API
+void resetHistory();
+void resetDailyHistory();
+void setDailyHistoryData(int idx, uint16_t co2, float temp, float humid);
 
 #endif // HISTORYMANAGER_H

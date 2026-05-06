@@ -15,6 +15,7 @@
 #include "Screen_Test.h"
 #include "Screen_OTA.h"
 #include "HistoryManager.h"
+#include "SDManager.h"
 #include "SensorManager.h"
 #include "SensorChart.h"
 #include "Logger.h"

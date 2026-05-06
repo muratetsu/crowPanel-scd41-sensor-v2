@@ -72,9 +72,9 @@ static void btn_connect_cb(lv_event_t *e) {
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, pass);
 
-  wifiConnecting = true;
-  wifiStartTime  = millis();
-  bootConnecting = false; // 手動接続
+  state.wifiConnecting = true;
+  state.wifiStartTime  = millis();
+  state.bootConnecting = false; // 手動接続
 
   LOG_I("WiFi", "Connecting to SSID: %s", ssid);
 }
@@ -225,7 +225,7 @@ static void btn_scan_cb(lv_event_t *e) {
 void checkScanStatus() {
   if (!scanRequested) return;
   
-  if (currentScreen != SCREEN_WIFI) {
+  if (state.currentScreen != SCREEN_WIFI) {
     scanRequested = false;
     return;
   }

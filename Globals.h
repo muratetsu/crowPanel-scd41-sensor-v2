@@ -36,16 +36,21 @@ enum AppScreen {
   SCREEN_OTA        // 画面6: OTA更新進捗 (内部使用)
 };
 
-// ============================================================
-// グローバル変数群 (実体は .ino に定義)
-// ============================================================
-extern AppScreen currentScreen;
+struct AppState {
+  AppScreen currentScreen;
+  bool bootConnecting;
+  bool wifiConnecting;
+  uint32_t wifiStartTime;
+  uint16_t currentCO2;
+  float currentTemp;
+  float currentHumid;
+  bool sensorDataValid;
+};
+
+extern AppState state;
 extern TFT_eSPI lcd;
 extern Preferences prefs;
 
-extern bool bootConnecting;
-extern bool wifiConnecting;
-extern uint32_t wifiStartTime;
 extern const uint32_t WIFI_TIMEOUT_MS;
 
 // 画面間で共有する変数の実体を持つ場合はここに extern で記述
@@ -68,10 +73,6 @@ void otaScheduleFirstCheck();  // WiFi接続完了時に .ino から呼ぶ
 // エラーラベル制御用 (Screen_WiFi に存在)
 void setWiFiErrorLabel(const char *msg);
 
-// SCD41 センサーデータ
-extern uint16_t currentCO2;
-extern float currentTemp;
-extern float currentHumid;
-extern bool sensorDataValid;
+// SCD41 センサーデータは AppState 構造体に移行しました
 
 #endif // GLOBALS_H

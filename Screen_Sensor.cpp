@@ -50,7 +50,7 @@ static void datetime_touch_cb(lv_event_t *e) {
 }
 
 void updateSensorLabel() {
-  if (currentScreen != SCREEN_SENSOR || label_datetime == NULL) return;
+  if (state.currentScreen != SCREEN_SENSOR || label_datetime == NULL) return;
 
   struct tm timeinfo;
   if (!getLocalTime(&timeinfo, 10)) {
@@ -86,10 +86,10 @@ void updateSensorLabel() {
     }
   }
 
-  if (sensorDataValid) {
-    if (label_co2) lv_label_set_text_fmt(label_co2, "%d", currentCO2);
-    if (label_temp) lv_label_set_text_fmt(label_temp, "%s", String(currentTemp, 1).c_str());
-    if (label_humid) lv_label_set_text_fmt(label_humid, "%s", String(currentHumid, 1).c_str());
+  if (state.sensorDataValid) {
+    if (label_co2) lv_label_set_text_fmt(label_co2, "%d", state.currentCO2);
+    if (label_temp) lv_label_set_text_fmt(label_temp, "%s", String(state.currentTemp, 1).c_str());
+    if (label_humid) lv_label_set_text_fmt(label_humid, "%s", String(state.currentHumid, 1).c_str());
   } else {
     if (label_co2) lv_label_set_text(label_co2, "--");
     if (label_temp) lv_label_set_text(label_temp, "--");
@@ -98,7 +98,7 @@ void updateSensorLabel() {
 }
 
 void updateSensorChartData(uint16_t co2, float temp, float humid) {
-  if (currentScreen != SCREEN_SENSOR) return;
+  if (state.currentScreen != SCREEN_SENSOR) return;
   SensorChart_UpdateData(co2, temp, humid);
 }
 

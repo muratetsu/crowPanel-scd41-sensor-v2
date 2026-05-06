@@ -27,12 +27,16 @@
 TFT_eSPI    lcd = TFT_eSPI();
 Preferences prefs;
 
-AppScreen currentScreen = SCREEN_NONE;
-
-uint16_t currentCO2 = 0;
-float currentTemp = 0.0f;
-float currentHumid = 0.0f;
-bool sensorDataValid = false;
+AppState state = {
+  SCREEN_NONE, // currentScreen
+  false,       // bootConnecting
+  false,       // wifiConnecting
+  0,           // wifiStartTime
+  0,           // currentCO2
+  0.0f,        // currentTemp
+  0.0f,        // currentHumid
+  false        // sensorDataValid
+};
 
 // 1分間隔チャート記録用バッファ
 uint32_t aggSumCO2 = 0;
@@ -80,12 +84,7 @@ void touch_calibrate() {
 static lv_disp_draw_buf_t draw_buf;
 static lv_color_t buf1[screenWidth * screenHeight / 10];
 
-// --- 起動時の自動接続中フラグ ---
-bool bootConnecting = false;
-
-// --- WiFi接続状態 ---
-bool     wifiConnecting  = false;
-uint32_t wifiStartTime   = 0;
+// --- WiFi接続状態 (AppStateに移行) ---
 const uint32_t WIFI_TIMEOUT_MS = 15000;
 
 // --- 日時更新タイマ ---
@@ -138,7 +137,7 @@ void syncNTP() {
 // ============================================================
 void showWiFiScreen() {
   resetWiFiUI_Fields();
-  currentScreen = SCREEN_WIFI;
+  state.currentScreen = SCREEN_WIFI;
 
   lv_obj_t *scr = lv_obj_create(NULL);
   createWiFiUI(scr);
@@ -147,7 +146,7 @@ void showWiFiScreen() {
 
 void showSensorScreen() {
   resetSensorUI_Fields();
-  currentScreen = SCREEN_SENSOR;
+  state.currentScreen = SCREEN_SENSOR;
 
   lv_obj_t *scr = lv_obj_create(NULL);
   createSensorUI(scr);
@@ -155,7 +154,7 @@ void showSensorScreen() {
 }
 
 void showMenuScreen() {
-  currentScreen = SCREEN_MENU;
+  state.currentScreen = SCREEN_MENU;
 
   lv_obj_t *scr = lv_obj_create(NULL);
   createMenuUI(scr);
@@ -164,7 +163,7 @@ void showMenuScreen() {
 
 void showDateSetScreen() {
   resetDateSetUI_Fields();
-  currentScreen = SCREEN_DATESET;
+  state.currentScreen = SCREEN_DATESET;
 
   lv_obj_t *scr = lv_obj_create(NULL);
   createDateSetUI(scr);
@@ -172,7 +171,7 @@ void showDateSetScreen() {
 }
 
 void showTestScreen() {
-  currentScreen = SCREEN_TEST;
+  state.currentScreen = SCREEN_TEST;
 
   lv_obj_t *scr = lv_obj_create(NULL);
   createTestUI(scr);
@@ -183,12 +182,12 @@ void showTestScreen() {
 // WiFi接続状態チェック (loop() から毎サイクル呼ぶ)
 // ============================================================
 void checkWiFiStatus() {
-  if (!wifiConnecting) return;
+  if (!state.wifiConnecting) return;
 
   wl_status_t status = WiFi.status();
 
   if (status == WL_CONNECTED) {
-    wifiConnecting = false;
+    state.wifiConnecting = false;
     LOG_I("WiFi", "Connected. IP: %s", WiFi.localIP().toString().c_str());
     
     syncNTP();
@@ -203,13 +202,13 @@ void checkWiFiStatus() {
 
     showSensorScreen(); // ひとまず画面2へ遷移（時刻同期はバックグラウンドで継続）
 
-  } else if (millis() - wifiStartTime > WIFI_TIMEOUT_MS) {
-    wifiConnecting = false;
+  } else if (millis() - state.wifiStartTime > WIFI_TIMEOUT_MS) {
+    state.wifiConnecting = false;
     WiFi.disconnect();
     LOG_E("WiFi", "Connection timed out.");
 
-    if (bootConnecting) {
-      bootConnecting = false;
+    if (state.bootConnecting) {
+      state.bootConnecting = false;
       showMenuScreen(); // 起動時失敗 → 画面3
     } else {
       // WiFi設定画面から接続 → 画面1に留まってエラー表示
@@ -264,9 +263,9 @@ void bootConnectWithSavedCredentials(const String &ssid, const String &pass) {
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid.c_str(), pass.c_str());
 
-  wifiConnecting = true;
-  wifiStartTime  = millis();
-  bootConnecting = true;
+  state.wifiConnecting = true;
+  state.wifiStartTime  = millis();
+  state.bootConnecting = true;
 
   LOG_I("Boot", "Auto-connecting to SSID: %s", ssid.c_str());
 }
@@ -282,10 +281,10 @@ void processSensorData() {
   int status = SensorManager::readData(co2, temperature, humidity);
   
   if (status == 1) { // 取得成功
-    currentCO2 = co2;
-    currentTemp = temperature;
-    currentHumid = humidity;
-    sensorDataValid = true;
+    state.currentCO2 = co2;
+    state.currentTemp = temperature;
+    state.currentHumid = humidity;
+    state.sensorDataValid = true;
     
     // 集計用に追加
     aggSumCO2 += co2;
@@ -293,7 +292,7 @@ void processSensorData() {
     aggSumHumid += humidity;
     aggNumSamples++;
   } else if (status == -1) { // 取得エラー（Not Readyではなく明確なエラー）
-    sensorDataValid = false;
+    state.sensorDataValid = false;
   }
   // status == 0 (Not Ready) の場合は何もしない（前回値を保持）
 }
@@ -463,7 +462,7 @@ void loop() {
 
   processSensorData();  // センサーデータ取得
 
-  if (currentScreen == SCREEN_SENSOR) {
+  if (state.currentScreen == SCREEN_SENSOR) {
     if (millis() - lastDateTimeUpdate >= 1000) {
       lastDateTimeUpdate = millis();
       updateSensorLabel();

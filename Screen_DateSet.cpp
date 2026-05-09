@@ -19,7 +19,7 @@ void resetDateSetUI_Fields() {
 
 static void btn_cancel_cb(lv_event_t *e) {
   if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
-    showMenuScreen();
+    showSensorScreen();
   }
 }
 
@@ -51,7 +51,7 @@ static void btn_save_cb(lv_event_t *e) {
     LOG_I("UI", "Manual time set to: %04d/%02d/%02d %02d:%02d:00", y, m, d, h, min);
 
     // Go back to Menu
-    showMenuScreen();
+    showSensorScreen();
   }
 }
 

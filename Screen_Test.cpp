@@ -19,7 +19,7 @@ static void btn_back_cb(lv_event_t *e) {
       lv_timer_del(test_timer);
       test_timer = NULL;
     }
-    showMenuScreen();
+    showSensorScreen();
   }
 }
 

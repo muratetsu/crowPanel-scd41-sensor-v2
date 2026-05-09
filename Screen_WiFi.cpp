@@ -248,6 +248,15 @@ void checkScanStatus() {
   buildScanModal(n);
 }
 
+static void btn_cancel_cb(lv_event_t *e) {
+  if (lv_event_get_code(e) != LV_EVENT_CLICKED) return;
+  if (kb) lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN);
+  closeScanModal(); // just in case
+  LOG_I("WiFi", "WiFi setup cancelled, returning to Sensor Screen.");
+  showSensorScreen();
+}
+
+
 void createWiFiUI(lv_obj_t *scr) {
   lv_obj_set_style_bg_color(scr, THEME_BG_LIGHT, 0);
 
@@ -257,22 +266,31 @@ void createWiFiUI(lv_obj_t *scr) {
   lv_obj_align(title, LV_ALIGN_TOP_LEFT, 5, 7);
 
   lv_obj_t *btn_connect = lv_btn_create(scr);
-  lv_obj_set_size(btn_connect, 80, 26);
+  lv_obj_set_size(btn_connect, 74, 26);
   lv_obj_align(btn_connect, LV_ALIGN_TOP_RIGHT, -4, 2);
   lv_obj_set_style_bg_color(btn_connect, lv_color_make(30, 140, 255), 0);
   lv_obj_t *btn_connect_lbl = lv_label_create(btn_connect);
-  lv_label_set_text(btn_connect_lbl, LV_SYMBOL_OK " Connect");
+  lv_label_set_text(btn_connect_lbl, "Connect");
   lv_obj_center(btn_connect_lbl);
   lv_obj_add_event_cb(btn_connect, btn_connect_cb, LV_EVENT_CLICKED, NULL);
 
   lv_obj_t *btn_scan = lv_btn_create(scr);
-  lv_obj_set_size(btn_scan, 66, 26);
+  lv_obj_set_size(btn_scan, 52, 26);
   lv_obj_align_to(btn_scan, btn_connect, LV_ALIGN_OUT_LEFT_MID, -4, 0);
   lv_obj_set_style_bg_color(btn_scan, lv_color_make(20, 120, 80), 0);
   lv_obj_t *btn_scan_lbl = lv_label_create(btn_scan);
-  lv_label_set_text(btn_scan_lbl, LV_SYMBOL_REFRESH " Scan");
+  lv_label_set_text(btn_scan_lbl, "Scan");
   lv_obj_center(btn_scan_lbl);
   lv_obj_add_event_cb(btn_scan, btn_scan_cb, LV_EVENT_CLICKED, NULL);
+
+  lv_obj_t *btn_cancel = lv_btn_create(scr);
+  lv_obj_set_size(btn_cancel, 62, 26);
+  lv_obj_align_to(btn_cancel, btn_scan, LV_ALIGN_OUT_LEFT_MID, -4, 0);
+  lv_obj_set_style_bg_color(btn_cancel, lv_color_make(180, 40, 40), 0);
+  lv_obj_t *btn_cancel_lbl = lv_label_create(btn_cancel);
+  lv_label_set_text(btn_cancel_lbl, "Cancel");
+  lv_obj_center(btn_cancel_lbl);
+  lv_obj_add_event_cb(btn_cancel, btn_cancel_cb, LV_EVENT_CLICKED, NULL);
 
   lv_obj_t *line_top = lv_obj_create(scr);
   lv_obj_set_size(line_top, screenWidth, 2);

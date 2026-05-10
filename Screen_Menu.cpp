@@ -155,13 +155,24 @@ void createMenuUI(lv_obj_t *scr) {
   // 4. Check for Update (OTA)
   lv_obj_t *btn4 = lv_btn_create(cont);
   lv_obj_set_size(btn4, BTN_W, BTN_H);
-  lv_obj_set_style_bg_color(btn4, lv_color_make(20, 100, 100), 0);
-  lv_obj_set_style_bg_color(btn4, lv_color_make(30, 140, 140), LV_STATE_PRESSED);
   lv_obj_set_style_radius(btn4, 8, 0);
   lv_obj_t *lbl4 = lv_label_create(btn4);
-  lv_label_set_text(lbl4, LV_SYMBOL_REFRESH "\nUpdate");
+  
+  if (otaIsUpdateAvailable()) {
+    // アップデートがある場合は目立たせる（オレンジ系）＋ ベルマーク
+    lv_obj_set_style_bg_color(btn4, lv_color_make(220, 80, 20), 0);
+    lv_obj_set_style_bg_color(btn4, lv_color_make(250, 110, 40), LV_STATE_PRESSED);
+    lv_label_set_text(lbl4, LV_SYMBOL_BELL "\nUpdate (New)");
+    lv_obj_set_style_text_color(lbl4, lv_color_make(255, 240, 220), 0);
+  } else {
+    // 通常時
+    lv_obj_set_style_bg_color(btn4, lv_color_make(20, 100, 100), 0);
+    lv_obj_set_style_bg_color(btn4, lv_color_make(30, 140, 140), LV_STATE_PRESSED);
+    lv_label_set_text(lbl4, LV_SYMBOL_REFRESH "\nUpdate");
+    lv_obj_set_style_text_color(lbl4, lv_color_make(180, 255, 255), 0);
+  }
+
   lv_obj_set_style_text_align(lbl4, LV_TEXT_ALIGN_CENTER, 0);
-  lv_obj_set_style_text_color(lbl4, lv_color_make(180, 255, 255), 0);
   lv_obj_set_style_text_font(lbl4, &lv_font_montserrat_14, 0);
   lv_obj_center(lbl4);
   lv_obj_add_event_cb(btn4, menu_ota_cb, LV_EVENT_CLICKED, NULL);

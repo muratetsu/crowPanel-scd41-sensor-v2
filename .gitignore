@@ -1,19 +1,16 @@
 # ============================================================
-# Arduino Build Artifacts
+# PlatformIO & Arduino Build Artifacts
 # ============================================================
-# Arduino IDEのビルド時に生成される一時ファイル・ディレクトリ
+.pio/
+.pioenvs/
+.piolibdeps/
+.clang_complete
+.gcc-flags.json
 build/
 *.hex
 *.elf
 *.bin
 *.map
-
-# ============================================================
-# Reference / Sample Code (not part of the main sketch)
-# ============================================================
-# 参考用サンプルコード（メインスケッチには含めない）
-Paint.ino
-CrowPanel_ESP32_LVGL_Demo.ino
 
 # ============================================================
 # OS / Editor Junk

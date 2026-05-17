@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #include <WiFi.h>
 #include <Preferences.h>
 #include <time.h>
@@ -329,7 +330,12 @@ void setup() {
   delay(100);
 
   // バックライト設定
+#if ESP_ARDUINO_VERSION_MAJOR >= 3
   ledcAttach(BACKLIGHT_PIN, PWM_FREQ, PWM_RESOLUTION);
+#else
+  ledcSetup(0, PWM_FREQ, PWM_RESOLUTION);
+  ledcAttachPin(BACKLIGHT_PIN, 0);
+#endif
   updateBacklightBrightness(); // 初期輝度設定
 
   // LVGL初期化
@@ -429,7 +435,11 @@ void processMinuteAggregation() {
 // バックライト制御
 // ============================================================
 void setBacklightBrightness(uint8_t brightness) {
+#if ESP_ARDUINO_VERSION_MAJOR >= 3
   ledcWrite(BACKLIGHT_PIN, brightness);
+#else
+  ledcWrite(0, brightness);
+#endif
 }
 
 void updateBacklightBrightness() {

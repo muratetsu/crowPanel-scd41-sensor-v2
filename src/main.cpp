@@ -155,6 +155,12 @@ void showSensorScreen() {
 }
 
 void showMenuScreen() {
+  // Sensor画面から遷移する場合、lv_scr_load_anim(auto_del=true)によって
+  // Sensor画面（と内部のchartウィジェット）が解放される前に
+  // SensorChart/UIポインタをNULLクリアする。
+  // これをしないと chart がダングリングポインタになり、
+  // DateSet画面のSaveボタンでSensorChart_RefreshAll()を呼んだ際にクラッシュする。
+  resetSensorUI_Fields();
   state.currentScreen = SCREEN_MENU;
 
   lv_obj_t *scr = lv_obj_create(NULL);

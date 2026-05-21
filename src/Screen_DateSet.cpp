@@ -57,13 +57,15 @@ static void btn_save_cb(lv_event_t *e) {
     loadHistoryFromSD(&t);
     loadDailyHistoryFromSD(&t);
 
-    // グラフ表示を更新
-    SensorChart_RefreshAll();
+    // NOTE: SensorChart_RefreshAll() はここでは呼ばない。
+    // この時点ではSensor画面(chart)が存在しない可能性があり、
+    // ダングリングポインタアクセスによるクラッシュの原因になる。
+    // showSensorScreen() → SensorChart_Init() → SensorChart_RefreshAll() で更新される。
 
     // バックライト輝度を即時再計算
     updateBacklightBrightness();
 
-    // Go back to Menu
+    // Go back to Sensor screen
     showSensorScreen();
   }
 }

@@ -303,7 +303,7 @@ void processSensorData() {
 // ============================================================
 void setup() {
   Serial.begin(115200);
-  LOG_I("Boot", "CrowPanel WiFi Config (LVGL) - 3-Screen");
+  LOG_I("Boot", "CrowPanel SCD41 Sensor starting up...");
 
   // ============================================================
   // ★ NVS削除用 (動作確認後は必ずこのブロックを削除すること) ★
@@ -363,6 +363,13 @@ void setup() {
 
   // SDカード初期化
   initSD();
+
+  // タイムゾーンをJSTに設定（restoreTimeFromSD()より前に必ず行う）
+  // これにより mktime() がSDログのJSTタイムスタンプを正しく解釈できる。
+  // 設定前に呼ぶと、mktime()がUTCとして解釈し、後でconfigTime(JST)を
+  // 呼んだ際に時刻が +9時間ずれて翌日01:17になるバグが発生する。
+  setenv("TZ", "JST-9", 1);
+  tzset();
 
   // SDカードのログから時刻を復元
   bool timeRestored = restoreTimeFromSD();

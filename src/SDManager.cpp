@@ -4,6 +4,7 @@
 #include <SD.h>
 #include <FS.h>
 #include <SPI.h>
+#include <sys/time.h>
 
 #define SD_MOSI 23
 #define SD_MISO 19
@@ -183,3 +184,107 @@ void loadDailyHistoryFromSD(struct tm *now) {
   }
   LOG_I("SD", "History (1D) loaded to memory.");
 }
+
+bool restoreTimeFromSD() {
+  File root = SD.open("/");
+  if (!root) {
+    LOG_E("SD", "Failed to open root directory to restore time.");
+    return false;
+  }
+  if (!root.isDirectory()) {
+    LOG_E("SD", "Root is not a directory.");
+    root.close();
+    return false;
+  }
+
+  String latestFileName = "";
+  File file = root.openNextFile();
+  while (file) {
+    if (!file.isDirectory()) {
+      String name = file.name();
+      String baseName = name;
+      // Strip leading '/' if present
+      if (baseName.startsWith("/")) {
+        baseName = baseName.substring(1);
+      }
+      // Log filename is YYYYMMDD.csv (length of YYYYMMDD.csv is 12)
+      if (baseName.length() == 12 && baseName.endsWith(".csv")) {
+        bool isAllDigits = true;
+        for (int i = 0; i < 8; i++) {
+          if (!isDigit(baseName.charAt(i))) {
+            isAllDigits = false;
+            break;
+          }
+        }
+        if (isAllDigits) {
+          if (latestFileName == "" || baseName > latestFileName) {
+            latestFileName = baseName;
+          }
+        }
+      }
+    }
+    file = root.openNextFile();
+  }
+  root.close();
+
+  if (latestFileName == "") {
+    LOG_I("SD", "No log files found on SD card to restore time.");
+    return false;
+  }
+
+  String fullPath = "/" + latestFileName;
+  File logFile = SD.open(fullPath, FILE_READ);
+  if (!logFile) {
+    LOG_E("SD", "Failed to open latest log file: %s", fullPath.c_str());
+    return false;
+  }
+
+  String lastLine = "";
+  while (logFile.available()) {
+    String line = logFile.readStringUntil('\n');
+    line.trim();
+    if (line.length() >= 19) { // YYYY-MM-DD HH:MM:SS is 19 characters
+      lastLine = line;
+    }
+  }
+  logFile.close();
+
+  if (lastLine.length() < 19) {
+    LOG_E("SD", "Latest log file is empty or too short.");
+    return false;
+  }
+
+  int year, month, day, hour, minute, second;
+  int items = sscanf(lastLine.c_str(), "%d-%d-%d %d:%d:%d", 
+                     &year, &month, &day, &hour, &minute, &second);
+  if (items < 6) {
+    LOG_E("SD", "Failed to parse timestamp from line: %s", lastLine.c_str());
+    return false;
+  }
+
+  // Set system time
+  struct tm tm_last = {0};
+  tm_last.tm_year = year - 1900;
+  tm_last.tm_mon = month - 1;
+  tm_last.tm_mday = day;
+  tm_last.tm_hour = hour;
+  tm_last.tm_min = minute;
+  tm_last.tm_sec = second;
+  tm_last.tm_isdst = -1;
+
+  time_t t_last = mktime(&tm_last);
+  if (t_last == (time_t)-1) {
+    LOG_E("SD", "mktime failed for restored time.");
+    return false;
+  }
+
+  struct timeval tv;
+  tv.tv_sec = t_last;
+  tv.tv_usec = 0;
+  settimeofday(&tv, NULL);
+
+  LOG_I("SD", "Restored system time from SD last log: %04d-%02d-%02d %02d:%02d:%02d", 
+        year, month, day, hour, minute, second);
+  return true;
+}
+

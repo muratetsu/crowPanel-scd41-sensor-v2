@@ -364,6 +364,16 @@ void setup() {
   // SDカード初期化
   initSD();
 
+  // SDカードのログから時刻を復元
+  bool timeRestored = restoreTimeFromSD();
+  if (timeRestored) {
+    struct tm tm_restored;
+    if (getLocalTime(&tm_restored, 0)) {
+      loadHistoryFromSD(&tm_restored);
+      loadDailyHistoryFromSD(&tm_restored);
+    }
+  }
+
   // NVS に保存済み認証情報があるか確認
   prefs.begin("wifi_cfg", true);
   String savedSSID = prefs.getString("ssid", "");

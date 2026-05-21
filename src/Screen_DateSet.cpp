@@ -1,5 +1,8 @@
 #include "Screen_DateSet.h"
 #include "Logger.h"
+#include "SDManager.h"
+#include "SensorChart.h"
+#include "Globals.h"
 #include <time.h>
 #include <sys/time.h>
 
@@ -49,6 +52,16 @@ static void btn_save_cb(lv_event_t *e) {
     settimeofday(&tv, NULL);
 
     LOG_I("UI", "Manual time set to: %04d/%02d/%02d %02d:%02d:00", y, m, d, h, min);
+
+    // 手動で時刻が設定されたので、履歴をリロード
+    loadHistoryFromSD(&t);
+    loadDailyHistoryFromSD(&t);
+
+    // グラフ表示を更新
+    SensorChart_RefreshAll();
+
+    // バックライト輝度を即時再計算
+    updateBacklightBrightness();
 
     // Go back to Menu
     showSensorScreen();

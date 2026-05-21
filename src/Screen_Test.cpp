@@ -37,12 +37,34 @@ static void btn_clear_nvs_cb(lv_event_t *e) {
     lv_obj_t *btn = lv_event_get_target(e);
     lv_obj_t *lbl = lv_obj_get_child(btn, 0);
     lv_label_set_text(lbl, "Cleared! Rebooting...");
+    lv_timer_handler();
     
     // Reboot after short delay using LVGL timer or async
     delay(1000); 
     ESP.restart();
   }
 }
+
+static void btn_clear_touch_cb(lv_event_t *e) {
+  if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
+    LOG_I("Test", "Clearing Touch Calibration via NVS...");
+    
+    prefs.begin("touch", false);
+    prefs.remove("calData");
+    prefs.end();
+    
+    LOG_I("Test", "Touch calibration cleared. Rebooting to calibrate...");
+    
+    lv_obj_t *btn = lv_event_get_target(e);
+    lv_obj_t *lbl = lv_obj_get_child(btn, 0);
+    lv_label_set_text(lbl, "Cleared! Rebooting...");
+    lv_timer_handler();
+    
+    delay(1000); 
+    ESP.restart();
+  }
+}
+
 
 static void test_timer_cb(lv_timer_t *timer) {
   if (!lbl_heap || !lbl_rssi || !lbl_uptime) return;
@@ -122,7 +144,7 @@ void createTestUI(lv_obj_t *scr) {
 
   // --- System Info Panel ---
   lv_obj_t *panel = lv_obj_create(scr);
-  lv_obj_set_size(panel, screenWidth - 20, 180);
+  lv_obj_set_size(panel, screenWidth - 20, 130);
   lv_obj_align(panel, LV_ALIGN_TOP_MID, 0, 45);
   lv_obj_set_style_bg_color(panel, THEME_BG_PANEL, 0);
   lv_obj_set_style_border_width(panel, 1, 0);
@@ -164,15 +186,29 @@ void createTestUI(lv_obj_t *scr) {
 
   // --- Clear NVS Button ---
   lv_obj_t *btn_clear = lv_btn_create(scr);
-  lv_obj_set_size(btn_clear, screenWidth - 60, 40);
-  lv_obj_align(btn_clear, LV_ALIGN_TOP_MID, 0, 235);
+  lv_obj_set_size(btn_clear, 140, 35);
+  lv_obj_align(btn_clear, LV_ALIGN_TOP_LEFT, 15, 185);
   lv_obj_set_style_bg_color(btn_clear, lv_color_make(180, 40, 40), 0);
   lv_obj_set_style_bg_color(btn_clear, lv_color_make(220, 60, 60), LV_STATE_PRESSED);
   lv_obj_add_event_cb(btn_clear, btn_clear_nvs_cb, LV_EVENT_CLICKED, NULL);
 
   lv_obj_t *lbl_clear = lv_label_create(btn_clear);
-  lv_label_set_text(lbl_clear, LV_SYMBOL_TRASH "  Clear WiFi Creds (NVS)");
+  lv_obj_set_style_text_font(lbl_clear, &lv_font_montserrat_12, 0);
+  lv_label_set_text(lbl_clear, LV_SYMBOL_TRASH " WiFi NVS");
   lv_obj_center(lbl_clear);
+
+  // --- Clear Touch Calibration Button ---
+  lv_obj_t *btn_touch = lv_btn_create(scr);
+  lv_obj_set_size(btn_touch, 140, 35);
+  lv_obj_align(btn_touch, LV_ALIGN_TOP_RIGHT, -15, 185);
+  lv_obj_set_style_bg_color(btn_touch, lv_color_make(140, 80, 20), 0);
+  lv_obj_set_style_bg_color(btn_touch, lv_color_make(180, 110, 30), LV_STATE_PRESSED);
+  lv_obj_add_event_cb(btn_touch, btn_clear_touch_cb, LV_EVENT_CLICKED, NULL);
+
+  lv_obj_t *lbl_touch = lv_label_create(btn_touch);
+  lv_obj_set_style_text_font(lbl_touch, &lv_font_montserrat_12, 0);
+  lv_label_set_text(lbl_touch, LV_SYMBOL_REFRESH " Recalibrate");
+  lv_obj_center(lbl_touch);
 
   // Initialize values immediately
   test_timer_cb(NULL);

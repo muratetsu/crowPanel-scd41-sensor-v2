@@ -381,9 +381,9 @@ void setup() {
   prefs.end();
 
   if (savedSSID.length() == 0) {
-    // 認証情報なし → メニュー画面へ
-    LOG_I("Boot", "No saved credentials. -> Menu screen.");
-    showMenuScreen();
+    // 認証情報なし → 時刻設定画面へ（時刻修正を促すため）
+    LOG_I("Boot", "No saved credentials. -> Date/Time set screen.");
+    showDateSetScreen();
   } else {
     // 認証情報あり → 自動接続 (結果は loop() -> checkWiFiStatus() で処理)
     LOG_I("Boot", "Found saved SSID: %s -> Auto-connecting.", savedSSID.c_str());

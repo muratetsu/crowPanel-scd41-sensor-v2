@@ -421,19 +421,24 @@ void processMinuteAggregation() {
       float avgTemp = aggSumTemp / aggNumSamples;
       float avgHumid = aggSumHumid / aggNumSamples;
       
+      // センサー安定時間（ウォームアップ）の判定
+      bool warmingUp = SensorManager::isWarmingUp();
+      uint16_t plotCO2 = warmingUp ? 0 : avgCO2;
+      float plotTemp = warmingUp ? 0.0f : avgTemp;
+      float plotHumid = warmingUp ? 0.0f : avgHumid;
+
       // 1. HistoryManagerに保存 (モデルの更新)
-      addHistoryData(avgCO2, avgTemp, avgHumid);
-      updateDailyHistoryInRealTime(avgCO2, avgTemp, avgHumid);
+      addHistoryData(plotCO2, plotTemp, plotHumid);
+      updateDailyHistoryInRealTime(plotCO2, plotTemp, plotHumid);
       
       // 2. センサー画面のチャートを更新 (Viewの更新)
-      updateSensorChartData(avgCO2, avgTemp, avgHumid);
+      updateSensorChartData(plotCO2, plotTemp, plotHumid);
       
       // 3. SDカードへ保存 (永続化)
-      // センサー安定のため、電源投入から3分(180000ms)経過してからSDへログを書き込む
-      if (millis() >= 180000) {
+      if (!warmingUp) {
           writeLogToSD(&timeinfo, avgCO2, avgTemp, avgHumid);
       } else {
-          LOG_D("SD", "Skip writing log to SD (warming up: < 3 mins)");
+          LOG_D("SD", "Skip writing log to SD (warming up)");
       }
 
       LOG_D("Graph", "Aggregated -> CO2: %d, Temp: %.1f, Humid: %.1f (Samples: %d)", 

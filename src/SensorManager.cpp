@@ -10,16 +10,22 @@ static SensirionI2cScd4x scd4x;
 namespace SensorManager {
 
 #ifdef USE_DUMMY_SENSOR
+    const uint32_t SENSOR_WARMUP_MS = 10000; // 10 seconds for testing
     static uint32_t lastRead = 0;
     static uint32_t lastAggTime = 0;
     static uint16_t last_error_code = 0;
     static uint16_t cached_asc = 1;
 #else
+    const uint32_t SENSOR_WARMUP_MS = 180000; // 3 minutes for production
     static uint32_t lastRead = 0;
     static int prevMinute = -1;
     static uint16_t last_error_code = 0;
     static uint16_t cached_asc = 0;
 #endif
+
+bool isWarmingUp() {
+    return millis() < SENSOR_WARMUP_MS;
+}
 
 void init() {
 #ifdef USE_DUMMY_SENSOR

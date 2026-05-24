@@ -23,6 +23,9 @@ namespace SensorManager {
     //  -1 : 取得エラー（通信エラー等）
     int readData(uint16_t &co2, float &temperature, float &humidity);
 
+    // センサーがウォームアップ中かどうか（SCD41の安定化待機時間）
+    bool isWarmingUp();
+
     // 過去ログ集計などのトリガー時間をチェックする
     // 本番環境時は1分ごとの変化をNTP時刻から検出し、
     // テスト時はテストを素早く回すため短時間（毎秒）でtrueを返すように切り替えます。

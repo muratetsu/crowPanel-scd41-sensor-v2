@@ -21,6 +21,8 @@
 #include "SensorChart.h"
 #include "Logger.h"
 #include "ota.h"
+#include "BootLogo.h"
+
 
 // ============================================================
 // グローバルオブジェクト定義
@@ -328,14 +330,8 @@ void setup() {
   // LCD初期化
   lcd.begin();
   lcd.setRotation(3);
-  lcd.fillScreen(TFT_BLACK);
-  
-  // タッチパネルのキャリブレーション（初回のみ画面表示）
-  touch_calibrate();
-  
-  delay(100);
 
-  // バックライト設定
+  // バックライト設定（ロゴを見せるため、液晶初期化直後に有効化）
 #if ESP_ARDUINO_VERSION_MAJOR >= 3
   ledcAttach(BACKLIGHT_PIN, PWM_FREQ, PWM_RESOLUTION);
 #else
@@ -343,6 +339,19 @@ void setup() {
   ledcAttachPin(BACKLIGHT_PIN, 0);
 #endif
   updateBacklightBrightness(); // 初期輝度設定
+
+  // 起動ロゴの表示
+  drawBootLogo(lcd, screenWidth, screenHeight);
+  delay(2000); // 2秒間表示を維持
+
+  // 画面を黒クリア
+  lcd.fillScreen(TFT_BLACK);
+  
+  // タッチパネルのキャリブレーション（初回のみ画面表示）
+  touch_calibrate();
+  
+  delay(100);
+
 
   // LVGL初期化
   lv_init();

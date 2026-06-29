@@ -12,16 +12,16 @@ inline void drawBootLogo(TFT_eSPI &tft, uint16_t screenWidth, uint16_t screenHei
   // Extract index colors from the first 16 bytes of logo_map (RGBA format, ignore Alpha for TFT)
   // and swap bytes for SPI big-endian
   
-  uint16_t color0 = tft.color565(logo_map[0], logo_map[1], logo_map[2]);
+  uint16_t color0 = tft.color565(logo_map[2], logo_map[1], logo_map[0]);
   color0 = (color0 >> 8) | (color0 << 8);
   
-  uint16_t color1 = tft.color565(logo_map[4], logo_map[5], logo_map[6]);
+  uint16_t color1 = tft.color565(logo_map[6], logo_map[5], logo_map[4]);
   color1 = (color1 >> 8) | (color1 << 8);
   
-  uint16_t color2 = tft.color565(logo_map[8], logo_map[9], logo_map[10]);
+  uint16_t color2 = tft.color565(logo_map[10], logo_map[9], logo_map[8]);
   color2 = (color2 >> 8) | (color2 << 8);
   
-  uint16_t color3 = tft.color565(logo_map[12], logo_map[13], logo_map[14]);
+  uint16_t color3 = tft.color565(logo_map[14], logo_map[13], logo_map[12]);
   color3 = (color3 >> 8) | (color3 << 8);
 
   // Clear the screen using the background color (Index 3)

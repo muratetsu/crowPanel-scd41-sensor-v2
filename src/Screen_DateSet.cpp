@@ -71,7 +71,7 @@ static void btn_save_cb(lv_event_t *e) {
 }
 
 void createDateSetUI(lv_obj_t *scr) {
-  lv_obj_set_style_bg_color(scr, THEME_BG_MAIN, 0);
+  lv_obj_set_style_bg_color(scr, THEME_BG_BLACK, 0);
 
   lv_obj_t *title = lv_label_create(scr);
   lv_label_set_text(title, "Set Date & Time");

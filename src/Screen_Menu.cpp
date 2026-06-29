@@ -64,7 +64,7 @@ static void menu_ota_cb(lv_event_t *e) {
 }
 
 void createMenuUI(lv_obj_t *scr) {
-  lv_obj_set_style_bg_color(scr, THEME_BG_MAIN, 0);
+  lv_obj_set_style_bg_color(scr, THEME_BG_BLACK, 0);
 
   // タイトル行 (バージョンを右側に並べて表示)
   lv_obj_t *title = lv_label_create(scr);

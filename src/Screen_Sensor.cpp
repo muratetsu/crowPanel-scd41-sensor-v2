@@ -103,7 +103,7 @@ void updateSensorChartData(uint16_t co2, float temp, float humid) {
 }
 
 void createSensorUI(lv_obj_t *scr) {
-  lv_obj_set_style_bg_color(scr, THEME_BG_DARK, 0);
+  lv_obj_set_style_bg_color(scr, THEME_BG_BLACK, 0);
   lv_obj_add_flag(scr, LV_OBJ_FLAG_CLICKABLE);
   lv_obj_add_event_cb(scr, datetime_touch_cb, LV_EVENT_CLICKED, NULL);
 

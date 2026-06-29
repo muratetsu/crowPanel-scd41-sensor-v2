@@ -9,11 +9,10 @@
 // ============================================================
 
 // --- Background Colors ---
-#define THEME_BG_DARK       lv_color_make(10, 15, 35)   // Sensor画面背景
-#define THEME_BG_MAIN       lv_color_make(15, 20, 40)   // Menu/設定画面背景
-#define THEME_BG_LIGHT      lv_color_make(20, 25, 45)   // WiFi/OTA/チャート背景
+#define THEME_BG_LIGHT      lv_color_make(10, 15, 35)   // WiFi/OTA/チャート背景
 #define THEME_BG_PANEL      lv_color_make(25, 30, 50)   // テスト用パネル背景
 #define THEME_BG_BTN        lv_color_make(30, 35, 50)   // 汎用ボタンスパン背景
+#define THEME_BG_BLACK      lv_color_make(0,   0,  0)
 
 // --- Text Colors ---
 #define THEME_TEXT_WHITE    lv_color_make(255, 255, 255)

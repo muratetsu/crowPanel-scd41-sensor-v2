@@ -8,7 +8,7 @@ static lv_chart_series_t *ser_co2 = NULL;
 static lv_chart_series_t *ser_temp = NULL;
 static lv_chart_series_t *ser_humid = NULL;
 
-static int currentChartMode = 0; // 0 = 4H, 1 = 1D
+static int currentChartMode = 0; // 0 = 4H, 1 = 24H
 static lv_obj_t *sensor_screen_parent = NULL;
 
 #define GRID_MARKS 9
@@ -326,7 +326,7 @@ void SensorChart_Init(lv_obj_t *parent) {
     lv_obj_t *chart_bg = lv_obj_create(parent);
     lv_obj_remove_style_all(chart_bg);
     lv_obj_set_size(chart_bg, screenWidth - 80, 150);
-    lv_obj_align(chart_bg, LV_ALIGN_TOP_RIGHT, -40, 45);
+    lv_obj_align(chart_bg, LV_ALIGN_TOP_RIGHT, -40, 42);
     lv_obj_set_style_bg_opa(chart_bg, LV_OPA_COVER, 0);
     lv_obj_set_style_bg_color(chart_bg, THEME_BG_LIGHT, 0);
     lv_obj_set_style_border_color(chart_bg, THEME_BORDER_DARK, 0);
@@ -347,7 +347,7 @@ void SensorChart_Init(lv_obj_t *parent) {
     chart = lv_chart_create(parent);
     
     lv_obj_set_size(chart, screenWidth - 80, 150);
-    lv_obj_align(chart, LV_ALIGN_TOP_RIGHT, -40, 45);
+    lv_obj_align(chart, LV_ALIGN_TOP_RIGHT, -40, 42);
     lv_chart_set_type(chart, LV_CHART_TYPE_LINE);
     lv_obj_clear_flag(chart, LV_OBJ_FLAG_CLICKABLE); 
 

@@ -11,7 +11,7 @@ void SensorChart_Init(lv_obj_t *parent);
 // チャートリソースのリセット（画面遷移時など）
 void SensorChart_Reset();
 
-// チャートモードの取得と設定 (0 = 4H, 1 = 1D)
+// チャートモードの取得と設定 (0 = 4H, 1 = 24H)
 int SensorChart_GetMode();
 void SensorChart_SetMode(int mode);
 

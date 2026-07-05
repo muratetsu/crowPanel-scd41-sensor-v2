@@ -36,12 +36,9 @@ static const char* NVS_NS          = "ota";          // 名前空間
 static const char* NVS_KEY_PENDING = "pending";      // 更新待ちフラグ (uint8)
 static const char* NVS_KEY_VERSION = "server_ver";   // 更新対象バージョン文字列
 
-// ローカルにビルド埋め込みするバージョン文字列。
-// ビルド時に Arduino IDE の「ツール > ボードメニュー」などから渡すか、
-// 手動でリリースごとに更新することを想定。
-#ifndef OTA_LOCAL_VERSION
-  #define OTA_LOCAL_VERSION  "v0.0.14"
-#endif
+// ローカルバージョン文字列は ota_version.h で一元管理しています。
+// バージョンを更新する場合は include/ota_version.h の OTA_LOCAL_VERSION を変更してください。
+#include "ota_version.h"
 
 
 static uint32_t           s_lastCheckMs     = 0;

@@ -18,16 +18,17 @@ static lv_obj_t *label_humid_unit = NULL;
 #include "SensorChart.h"
 
 // ─────────────────────────────────────────────────────────────
-static lv_obj_t *span_btnm = NULL;
+static lv_obj_t *span_btn = NULL;
+static lv_obj_t *span_label = NULL;
 
 // ─────────────────────────────────────────────────────────────
-static void span_btnm_event_cb(lv_event_t * e) {
-    lv_obj_t * obj = lv_event_get_target(e);
-    uint32_t id = lv_btnmatrix_get_selected_btn(obj);
-    if(id != SensorChart_GetMode()) {
-        SensorChart_SetMode(id);
-        LOG_I("UI", "Switched to %s mode", (id == 0) ? "4H" : "1D");
+static void span_btn_event_cb(lv_event_t * e) {
+    int new_mode = (SensorChart_GetMode() == 0) ? 1 : 0;
+    SensorChart_SetMode(new_mode);
+    if (span_label) {
+        lv_label_set_text(span_label, (new_mode == 0) ? "4H" : "24H");
     }
+    LOG_I("UI", "Switched to %s mode", (new_mode == 0) ? "4H" : "24H");
 }
 
 void resetSensorUI_Fields() {
@@ -111,7 +112,7 @@ void createSensorUI(lv_obj_t *scr) {
   lv_label_set_text(label_wifi, LV_SYMBOL_WIFI);
   lv_obj_set_style_text_color(label_wifi, THEME_TEXT_WHITE, 0); // initial white
   lv_obj_set_style_text_font(label_wifi, &lv_font_montserrat_16, 0);
-  lv_obj_align(label_wifi, LV_ALIGN_TOP_LEFT, 5, 7); // slightly lower to align with date text baseline
+  lv_obj_align(label_wifi, LV_ALIGN_TOP_LEFT, 0, 0);
 
   label_datetime = lv_label_create(scr);
   lv_label_set_text(label_datetime, "--- - --:--");
@@ -119,31 +120,40 @@ void createSensorUI(lv_obj_t *scr) {
   lv_obj_set_style_text_font(label_datetime, &lv_font_montserrat_20, 0); 
   lv_obj_align_to(label_datetime, label_wifi, LV_ALIGN_OUT_RIGHT_MID, 5, 0);
 
-  // --- 期間切り替え用ボタングループ (4H / 1D) ---
-  span_btnm = lv_btnmatrix_create(scr);
-  static const char * span_map[] = {"4H", "1D", ""};
-  lv_btnmatrix_set_map(span_btnm, span_map);
-  lv_obj_set_size(span_btnm, 80, 25);
-  lv_obj_align(span_btnm, LV_ALIGN_TOP_RIGHT, -5, 5); // 右上に配置
-  lv_btnmatrix_set_btn_ctrl_all(span_btnm, LV_BTNMATRIX_CTRL_CHECKABLE);
-  lv_btnmatrix_set_one_checked(span_btnm, true);
-  // 初期状態を同期
-  lv_btnmatrix_set_btn_ctrl(span_btnm, SensorChart_GetMode(), LV_BTNMATRIX_CTRL_CHECKED);
-  lv_obj_add_event_cb(span_btnm, span_btnm_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
+  // --- 期間切り替え用トグルボタン (4H / 24H) ---
+  // タッチエリア用の透明な親コンテナ（大きめ）
+  lv_obj_t *span_touch_area = lv_obj_create(scr);
+  lv_obj_remove_style_all(span_touch_area);
+  lv_obj_set_size(span_touch_area, 70, 50);
+  lv_obj_align(span_touch_area, LV_ALIGN_TOP_RIGHT, 0, 0);
+  lv_obj_add_event_cb(span_touch_area, span_btn_event_cb, LV_EVENT_CLICKED, NULL);
+  lv_obj_clear_flag(span_touch_area, LV_OBJ_FLAG_SCROLLABLE);
+
+  // 見た目のボタン（小さめ）
+  span_btn = lv_btn_create(span_touch_area);
+  lv_obj_set_size(span_btn, 50, 25);
+  lv_obj_align(span_btn, LV_ALIGN_TOP_RIGHT, 0, 0);
+  lv_obj_clear_flag(span_btn, LV_OBJ_FLAG_CLICKABLE); // 親がタッチを受け取る
   
-  // スタイルを画面に少し馴染ませる（ダークっぽく）
-  lv_obj_set_style_bg_color(span_btnm, THEME_BG_BTN, 0);
-  lv_obj_set_style_border_width(span_btnm, 0, 0);
-  lv_obj_set_style_pad_all(span_btnm, 2, 0);
-  lv_obj_set_style_text_font(span_btnm, &lv_font_montserrat_12, 0);
+  // スタイル：白背景に黒文字
+  lv_obj_set_style_bg_color(span_btn, THEME_TEXT_WHITE, 0);
+  lv_obj_set_style_border_width(span_btn, 0, 0);
+  lv_obj_set_style_pad_all(span_btn, 2, 0);
+
+  // ボタン上に現在のモードを表示するラベル
+  span_label = lv_label_create(span_btn);
+  lv_label_set_text(span_label, (SensorChart_GetMode() == 0) ? "4H" : "24H");
+  lv_obj_set_style_text_font(span_label, &lv_font_montserrat_14, 0);
+  lv_obj_set_style_text_color(span_label, THEME_BG_BLACK, 0);
+  lv_obj_center(span_label);
 
   // --- OTA Notification Icon ---
   label_ota_icon = lv_label_create(scr);
   lv_label_set_text(label_ota_icon, LV_SYMBOL_BELL);
   lv_obj_set_style_text_color(label_ota_icon, THEME_COLOR_WARNING, 0); // Orange/Yellow
   lv_obj_set_style_text_font(label_ota_icon, &lv_font_montserrat_16, 0); // same as wifi
-  // 4H/1Dボタン(span_btnm)の左隣に配置
-  lv_obj_align_to(label_ota_icon, span_btnm, LV_ALIGN_OUT_LEFT_MID, -10, 0);
+  // 4H/24Hボタン(span_btn)の左隣に配置
+  lv_obj_align_to(label_ota_icon, span_btn, LV_ALIGN_OUT_LEFT_MID, -10, 0);
   lv_obj_add_flag(label_ota_icon, LV_OBJ_FLAG_HIDDEN); // Hidden by default
 
   // --- CO2 ---

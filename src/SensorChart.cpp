@@ -285,27 +285,20 @@ void SensorChart_RefreshAll() {
 void SensorChart_UpdateData(uint16_t co2, float temp, float humid) {
     if (chart == NULL) return;
 
-    if (currentChartMode == 0) {
-        updateCO2YRange(); 
-        bool secChanged = updateSecondaryRange();
-        if (secChanged) {
-            repopulateChart();
-        } else {
-            lv_chart_set_next_value(chart, ser_co2,   co2   > 0     ? co2            : LV_CHART_POINT_NONE);
-            lv_chart_set_next_value(chart, ser_temp,  temp  > 0.0f  ? normTemp(temp)  : LV_CHART_POINT_NONE);
-            lv_chart_set_next_value(chart, ser_humid, humid > 0.0f  ? normHumid(humid) : LV_CHART_POINT_NONE);
-        }
-        lv_chart_refresh(chart);
-        updateSecondaryYLabels();
-        updateChartGridUI();
+    updateCO2YRange();
+    bool secChanged = updateSecondaryRange();
+
+    if (currentChartMode == 0 && !secChanged) {
+        lv_chart_set_next_value(chart, ser_co2,   co2   > 0     ? co2            : LV_CHART_POINT_NONE);
+        lv_chart_set_next_value(chart, ser_temp,  temp  > 0.0f  ? normTemp(temp)  : LV_CHART_POINT_NONE);
+        lv_chart_set_next_value(chart, ser_humid, humid > 0.0f  ? normHumid(humid) : LV_CHART_POINT_NONE);
     } else {
-        updateCO2YRange();
-        updateSecondaryRange();
         repopulateChart();
-        lv_chart_refresh(chart);
-        updateSecondaryYLabels();
-        updateChartGridUI();
     }
+
+    lv_chart_refresh(chart);
+    updateSecondaryYLabels();
+    updateChartGridUI();
 }
 
 void SensorChart_Reset() {

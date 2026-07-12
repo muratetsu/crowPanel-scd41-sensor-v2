@@ -1,5 +1,6 @@
 #include "SensorChart.h"
 #include "HistoryManager.h"
+#include "Logger.h"
 #include <time.h>
 #include <math.h>
 
@@ -319,6 +320,14 @@ void SensorChart_Reset() {
     prevHumidOffset = -9999.0f;
 }
 
+static void chart_event_cb(lv_event_t *e) {
+    if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
+        int new_mode = (SensorChart_GetMode() == 0) ? 1 : 0;
+        SensorChart_SetMode(new_mode);
+        LOG_I("UI", "Switched to %s mode via chart tap", (new_mode == 0) ? "4H" : "24H");
+    }
+}
+
 void SensorChart_Init(lv_obj_t *parent) {
     sensor_screen_parent = parent;
     
@@ -349,7 +358,8 @@ void SensorChart_Init(lv_obj_t *parent) {
     lv_obj_set_size(chart, screenWidth - 80, 150);
     lv_obj_align(chart, LV_ALIGN_TOP_RIGHT, -40, 42);
     lv_chart_set_type(chart, LV_CHART_TYPE_LINE);
-    lv_obj_clear_flag(chart, LV_OBJ_FLAG_CLICKABLE); 
+    lv_obj_add_flag(chart, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_event_cb(chart, chart_event_cb, LV_EVENT_CLICKED, NULL); 
 
     lv_obj_set_style_bg_opa(chart, LV_OPA_TRANSP, LV_PART_MAIN);
     lv_obj_set_style_border_width(chart, 0, LV_PART_MAIN);

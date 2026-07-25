@@ -23,5 +23,6 @@ void updateDailyHistoryInRealTime(uint16_t co2, float temp, float humid);
 void resetHistory();
 void resetDailyHistory();
 void setDailyHistoryData(int idx, uint16_t co2, float temp, float humid);
+void initDailyHistoryRTMode(int cur_bkt);
 
 #endif // HISTORYMANAGER_H

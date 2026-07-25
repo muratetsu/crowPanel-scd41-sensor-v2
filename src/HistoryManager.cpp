@@ -82,8 +82,18 @@ void updateDailyHistoryInRealTime(uint16_t co2, float temp, float humid) {
         dailyCount_rt++;
     } else {
         // バケツ境界を越えた。リングバッファのインデックスを進める。
-        int diff = (cur_bkt - _rtModeCurBucket + 240) % 240;
-        if (diff > 240) diff = 240;
+        int diff = (cur_bkt - _rtModeCurBucket + HISTORY_DAILY_POINTS) % HISTORY_DAILY_POINTS;
+
+        // diff が全バッファサイズに達する場合 (長期スリープ等) はバッファ全消去を防ぐ
+        if (diff >= HISTORY_DAILY_POINTS) {
+            LOG_W("History", "Daily RT: diff too large (%d), skipping zero-fill", diff);
+            _rtModeCurBucket = cur_bkt;
+            dailySumCO2_rt   = co2;
+            dailySumTemp_rt  = temp;
+            dailySumHumid_rt = humid;
+            dailyCount_rt    = 1;
+            return;
+        }
 
         for (int step = 0; step < diff; step++) {
             dailyHistCO2[dailyHistIdx] = 0;
@@ -108,5 +118,19 @@ void updateDailyHistoryInRealTime(uint16_t co2, float temp, float humid) {
         dailyHistHumid[latestIdx] = dailySumHumid_rt / dailyCount_rt;
     }
 }
+
+void initDailyHistoryRTMode(int cur_bkt) {
+    _rtModeCurBucket = cur_bkt;
+    dailyHistIdx     = (cur_bkt + 1) % HISTORY_DAILY_POINTS;
+
+    dailySumCO2_rt   = 0;
+    dailySumTemp_rt  = 0.0f;
+    dailySumHumid_rt = 0.0f;
+    dailyCount_rt    = 0;
+
+    LOG_I("History", "Daily RT mode initialized: cur_bkt=%d, dailyHistIdx=%d",
+          cur_bkt, dailyHistIdx);
+}
+
 
 // (End of file, SD related loading functions have been moved to SDManager.cpp)

@@ -125,16 +125,17 @@ void loadHistoryFromSD(struct tm *now) {
 void loadDailyHistoryFromSD(struct tm *now) {
   resetDailyHistory();
   
+  int cur_bkt_now = (now->tm_hour * 60 + now->tm_min) / 6;
+
   uint32_t dailySumCO2[HISTORY_DAILY_POINTS] = {0};
   float dailySumTemp[HISTORY_DAILY_POINTS] = {0};
   float dailySumHumid[HISTORY_DAILY_POINTS] = {0};
   int dailyCount[HISTORY_DAILY_POINTS] = {0};
 
   time_t t_now = mktime(now);
-  time_t t_start = t_now - (24 * 3600); // 24時間前
 
   for (int d = -1; d <= 0; d++) {
-     time_t t_day = t_now + (d * 24 * 3600);
+     time_t t_day = t_now + (long)(d * 24 * 3600);
      struct tm *tm_day = localtime(&t_day);
      char logFileName[24];
      strftime(logFileName, sizeof(logFileName), "/%Y%m%d.csv", tm_day);
@@ -151,26 +152,15 @@ void loadDailyHistoryFromSD(struct tm *now) {
             if (sscanf(line.c_str(), "%d-%d-%d %d:%d:%d, %d, %f, %f", 
                            &year, &month, &day, &hour, &min, &sec, 
                            &co2, &temp, &humid) >= 9) {
-                struct tm tm_line = {0};
-                tm_line.tm_year = year - 1900;
-                tm_line.tm_mon = month - 1;
-                tm_line.tm_mday = day;
-                tm_line.tm_hour = hour;
-                tm_line.tm_min = min;
-                tm_line.tm_sec = sec;
-                tm_line.tm_isdst = -1;
-                time_t t_log = mktime(&tm_line);
-                
-                if (t_log >= t_start && t_log <= t_now) {
-                    long diff = t_log - t_start;
-                    int bucket = diff / (6 * 60);
-                    if (bucket >= 0 && bucket < HISTORY_DAILY_POINTS) {
-                        dailySumCO2[bucket] += co2;
-                        dailySumTemp[bucket] += temp;
-                        dailySumHumid[bucket] += humid;
-                        dailyCount[bucket]++;
-                    }
-                }
+                int abs_bkt = (hour * 60 + min) / 6;
+                bool valid = (d == -1) ? (abs_bkt > cur_bkt_now)
+                                       : (abs_bkt <= cur_bkt_now);
+                if (!valid) continue;
+
+                dailySumCO2[abs_bkt] += (uint32_t)co2;
+                dailySumTemp[abs_bkt] += temp;
+                dailySumHumid[abs_bkt] += humid;
+                dailyCount[abs_bkt]++;
             }
          }
          file.close();
@@ -182,7 +172,10 @@ void loadDailyHistoryFromSD(struct tm *now) {
         setDailyHistoryData(i, dailySumCO2[i] / dailyCount[i], dailySumTemp[i] / dailyCount[i], dailySumHumid[i] / dailyCount[i]);
      }
   }
-  LOG_I("SD", "History (1D) loaded to memory.");
+
+  initDailyHistoryRTMode(cur_bkt_now);
+
+  LOG_I("SD", "History (1D) loaded to memory. cur_bkt_now=%d", cur_bkt_now);
 }
 
 bool restoreTimeFromSD() {

@@ -14,10 +14,12 @@
 #if ENABLE_DEBUG_LOG
     // \nは自動で付与されるようにしています
     #define LOG_I(tag, fmt, ...) Serial.printf("[INFO][%s] " fmt "\n", tag, ##__VA_ARGS__)
+    #define LOG_W(tag, fmt, ...) Serial.printf("[WARN][%s] " fmt "\n", tag, ##__VA_ARGS__)
     #define LOG_E(tag, fmt, ...) Serial.printf("[ERROR][%s] " fmt "\n", tag, ##__VA_ARGS__)
     #define LOG_D(tag, fmt, ...) Serial.printf("[DEBUG][%s] " fmt "\n", tag, ##__VA_ARGS__)
 #else
     #define LOG_I(tag, fmt, ...)
+    #define LOG_W(tag, fmt, ...)
     #define LOG_E(tag, fmt, ...)
     #define LOG_D(tag, fmt, ...)
 #endif

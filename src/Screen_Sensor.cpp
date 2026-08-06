@@ -104,13 +104,13 @@ void createSensorUI(lv_obj_t *scr) {
   label_wifi = lv_label_create(scr);
   lv_label_set_text(label_wifi, LV_SYMBOL_WIFI);
   lv_obj_set_style_text_color(label_wifi, THEME_TEXT_WHITE, 0); // initial white
-  lv_obj_set_style_text_font(label_wifi, &lv_font_montserrat_16, 0);
+  lv_obj_set_style_text_font(label_wifi, &lv_font_montserrat_20, 0);
   lv_obj_align(label_wifi, LV_ALIGN_TOP_LEFT, 0, 0);
 
   label_datetime = lv_label_create(scr);
   lv_label_set_text(label_datetime, "--- - --:--");
   lv_obj_set_style_text_color(label_datetime, THEME_TEXT_WHITE, 0);
-  lv_obj_set_style_text_font(label_datetime, &lv_font_montserrat_20, 0); 
+  lv_obj_set_style_text_font(label_datetime, &lv_font_montserrat_24, 0); 
   lv_obj_align_to(label_datetime, label_wifi, LV_ALIGN_OUT_RIGHT_MID, 5, 0);
 
   // --- OTA Notification Icon ---

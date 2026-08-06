@@ -1,4 +1,4 @@
-# CrowPanel SCD41 Sensor Dashboard (v2)
+# CrowPanel SCD41 Sensor Dashboard
 
 SCD41 CO2センサによる空気質（CO2・温度・湿度）のリアルタイム監視とグラフ表示を提供するスマートモニタである．ハードウェアはESP32を搭載したCrowPanelを対象とする．
 Wi-Fi設定，環境センサのダッシュボード，SDカードへのデータロギング，そしてメニュー画面といった複数画面機能を含む．

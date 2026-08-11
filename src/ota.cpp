@@ -19,6 +19,7 @@
 
 #include "ota.h"
 #include "Logger.h"
+#include "Globals.h"
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
@@ -179,6 +180,9 @@ static void onUpdateError(int err) {
 static void executeFirmwareUpdate()
 {
     LOG_I("OTA", "Starting firmware update from: %s", OTA_URL_BIN);
+
+    // OTAダウンロード・書き込み中の視認性確保のため輝度を向上
+    setBacklightBrightness(BRIGHTNESS_DAY);
 
     // WiFi 接続確認 (再接続待ち)
     uint32_t start = millis();

@@ -13,6 +13,6 @@
 #ifndef OTA_VERSION_H
 #define OTA_VERSION_H
 
-#define OTA_LOCAL_VERSION  "v0.0.18"
+#define OTA_LOCAL_VERSION  "v0.0.19"
 
 #endif // OTA_VERSION_H

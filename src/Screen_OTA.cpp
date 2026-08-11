@@ -28,6 +28,7 @@
 #include "Screen_OTA.h"
 #include "ota.h"
 #include "Logger.h"
+#include "Globals.h"
 #include <lvgl.h>
 
 // ============================================================
@@ -198,6 +199,9 @@ void otaShowProgressScreen(const char* serverVersion)
     // 画面をロードして、LVGLに描画させる
     lv_scr_load(scr);
     lv_timer_handler();
+
+    // OTA進捗画面表示時は視認性向上のためバックライトを昼間輝度に昇格
+    setBacklightBrightness(BRIGHTNESS_DAY);
 
     LOG_I("OTA", "Progress screen displayed.");
 }

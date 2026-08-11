@@ -332,6 +332,7 @@ void setup() {
   lcd.setRotation(3);
 
   // バックライト設定（ロゴを見せるため、液晶初期化直後に有効化）
+  pinMode(BACKLIGHT_PIN, OUTPUT);
 #if ESP_ARDUINO_VERSION_MAJOR >= 3
   ledcAttach(BACKLIGHT_PIN, PWM_FREQ, PWM_RESOLUTION);
 #else
@@ -393,6 +394,7 @@ void setup() {
     if (getLocalTime(&tm_restored, 0)) {
       loadHistoryFromSD(&tm_restored);
       loadDailyHistoryFromSD(&tm_restored);
+      updateBacklightBrightness(); // 復元された時刻に基づいて輝度を更新
     }
   }
 

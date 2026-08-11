@@ -216,8 +216,8 @@ static void updateChartGridUI() {
                     lv_coord_t x = coords.x1 + (lv_coord_t)data_idx * inner_w / (HISTORY_POINTS - 1);
                     int abs_min = cur_min - (HISTORY_POINTS - 1) + data_idx;
                     int label_hour = (((abs_min % 1440) + 1440) % 1440) / 60;
-                    lv_label_set_text_fmt(xlabel_objs[k], "%d:00", label_hour);
-                    lv_obj_set_pos(xlabel_objs[k], x - 12, label_y);
+                    lv_label_set_text_fmt(xlabel_objs[k], "%d", label_hour);
+                    lv_obj_set_pos(xlabel_objs[k], x - (label_hour < 10 ? 4 : 7), label_y);
                 } else {
                     lv_label_set_text(xlabel_objs[k], "");
                 }
@@ -244,8 +244,8 @@ static void updateChartGridUI() {
                     lv_coord_t x = coords.x1 + (lv_coord_t)data_idx * inner_w / (HISTORY_DAILY_POINTS - 1);
                     int abs_bkt = cur_bkt - (HISTORY_DAILY_POINTS - 1) + data_idx;
                     int label_hour = (((abs_bkt * 6 % 1440) + 1440) % 1440) / 60;
-                    lv_label_set_text_fmt(xlabel_objs[k], "%d:00", label_hour);
-                    lv_obj_set_pos(xlabel_objs[k], x - 12, label_y);
+                    lv_label_set_text_fmt(xlabel_objs[k], "%d", label_hour);
+                    lv_obj_set_pos(xlabel_objs[k], x - (label_hour < 10 ? 4 : 7), label_y);
                 } else {
                     lv_label_set_text(xlabel_objs[k], "");
                 }

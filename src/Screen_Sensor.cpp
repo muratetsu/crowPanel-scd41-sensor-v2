@@ -47,7 +47,7 @@ void updateSensorLabel() {
 
   const char* months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
   char buf[40];
-  snprintf(buf, sizeof(buf), "%s %d  %02d:%02d",
+  snprintf(buf, sizeof(buf), "%s %d  %d:%02d",
     months[timeinfo.tm_mon],
     timeinfo.tm_mday,
     timeinfo.tm_hour,
